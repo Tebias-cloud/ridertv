@@ -47,14 +47,18 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'No body')
-      console.error(`Upstream error ${response.status} for ${proxyUrl}:`, errorText)
+      console.error(`[PROXY] Upstream error ${response.status} for ${action}:`, errorText)
       return NextResponse.json({ error: `Upstream error: ${response.status}`, details: errorText }, { status: response.status })
     }
 
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error: any) {
-    console.error('IPTV Proxy Error:', error.message)
-    return NextResponse.json({ error: 'Proxy fetch failed' }, { status: 500 })
+    console.error(`[PROXY] Critical Failure for ${action}:`, error.message)
+    return NextResponse.json({ 
+      error: 'Proxy fetch failed', 
+      message: error.message,
+      action: action 
+    }, { status: 500 })
   }
 }
