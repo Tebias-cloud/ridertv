@@ -13,7 +13,9 @@ export async function GET(request: NextRequest) {
   const action = searchParams.get('action')
 
   if (!username || !password || !portal_url || !action) {
-    return NextResponse.json({ error: 'Missing required params: username, password, portal_url, action' }, { status: 400 })
+    // Si faltan parámetros (por ejemplo, usuario admin sin línea IPTV), devolvemos éxito vacío
+    // para no ensuciar la consola con errores 400.
+    return NextResponse.json([], { status: 200 })
   }
 
   try {
