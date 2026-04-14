@@ -43,7 +43,7 @@ export default async function AdminPage() {
            Error cargando perfiles: {error}
         </div>
       ) : (
-        <AdminClientPanel initialProfiles={profiles || []} />
+        <AdminClientPanel initialProfiles={profiles || []} currentUserId={user.id} />
       )}
     </div>
   )

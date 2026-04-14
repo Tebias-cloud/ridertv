@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { createUserAction, toggleUserAccessAction, updateUserExpiryAction, deleteUserAction, updateIPTVCredentialsAction, resetWebPasswordAction } from '@/actions/admin'
 import { Trash2, Clock, UserPlus, Power, AlertCircle, Eye, EyeOff, Edit, Save, KeyRound } from 'lucide-react'
 
-export default function AdminClientPanel({ initialProfiles }: { initialProfiles: any[] }) {
+export default function AdminClientPanel({ initialProfiles, currentUserId }: { initialProfiles: any[], currentUserId: string }) {
   const [profiles, setProfiles] = useState(initialProfiles)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -240,16 +240,25 @@ export default function AdminClientPanel({ initialProfiles }: { initialProfiles:
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/50">
-              {profiles.filter((p: any) => p.role !== 'admin').map((profile: any) => {
+              {profiles.map((profile: any) => {
                 const daysLeft = calculateDaysLeft(profile.expires_at)
                 
                 return (
                   <tr key={profile.id} className="hover:bg-zinc-800/20 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="font-bold text-white text-base">{profile.username}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-bold text-white text-base">{profile.username}</div>
+                        {profile.role === 'admin' && (
+                          <span className="bg-amber-500/10 text-amber-500 text-[10px] font-black px-2 py-0.5 rounded border border-amber-500/20 tracking-tighter uppercase">
+                            Maestro
+                          </span>
+                        )}
+                      </div>
                       <button 
                          onClick={() => handleResetWebPass(profile.id)}
-                         className="mt-2 text-[10px] uppercase font-bold text-amber-500 hover:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-1 rounded transition-colors flex items-center gap-1"
+                         disabled={profile.id === currentUserId}
+                         title={profile.id === currentUserId ? "No puedes modificar tu propia cuenta administrativa" : ""}
+                         className="mt-2 text-[10px] uppercase font-bold text-amber-500 hover:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-1 rounded transition-colors flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                          <KeyRound className="w-3 h-3" /> Reset Clave Web
                       </button>
@@ -314,8 +323,9 @@ export default function AdminClientPanel({ initialProfiles }: { initialProfiles:
                     <td className="px-6 py-4 text-center">
                       <button
                         onClick={() => handleToggleAccess(profile.id, profile.is_active)}
-                        disabled={isLoading}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${profile.is_active ? 'bg-emerald-500' : 'bg-red-500'}`}
+                        disabled={isLoading || profile.id === currentUserId}
+                        title={profile.id === currentUserId ? "No puedes modificar tu propio acceso administrativo" : ""}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed ${profile.is_active ? 'bg-emerald-500' : 'bg-red-500'}`}
                       >
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${profile.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
                       </button>
@@ -324,8 +334,9 @@ export default function AdminClientPanel({ initialProfiles }: { initialProfiles:
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleDelete(profile.id)}
-                          disabled={isLoading}
-                          className="px-3 py-1.5 bg-zinc-800 hover:bg-red-500/20 hover:text-red-500 text-zinc-300 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold"
+                          disabled={isLoading || profile.id === currentUserId}
+                          title={profile.id === currentUserId ? "No puedes eliminar tu propia cuenta administrativa" : ""}
+                          className="px-3 py-1.5 bg-zinc-800 hover:bg-red-500/20 hover:text-red-500 text-zinc-300 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           <Trash2 className="w-3.5 h-3.5" /> Eliminar
                         </button>
@@ -334,7 +345,7 @@ export default function AdminClientPanel({ initialProfiles }: { initialProfiles:
                   </tr>
                 )
               })}
-              {profiles.filter((p: any) => p.role !== 'admin').length === 0 && (
+              {profiles.length === 0 && (
                 <tr>
                    <td colSpan={5} className="px-6 py-8 text-center text-zinc-500">
                      No hay clientes registrados aún.
