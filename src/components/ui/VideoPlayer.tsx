@@ -10,7 +10,7 @@ interface VideoPlayerProps {
   isLive?: boolean
 }
 
-function TimeDisplay({ videoRef, isLive }: { videoRef: React.RefObject<HTMLVideoElement>, isLive?: boolean }) {
+function TimeDisplay({ videoRef, isLive }: { videoRef: React.RefObject<HTMLVideoElement | null>, isLive?: boolean }) {
   const timeRef = useRef<HTMLSpanElement>(null)
   
   useEffect(() => {
@@ -42,7 +42,7 @@ function TimeDisplay({ videoRef, isLive }: { videoRef: React.RefObject<HTMLVideo
   return <span ref={timeRef} className="text-white text-xs sm:text-sm font-medium tracking-widest opacity-80">00:00 / 00:00</span>
 }
 
-function ProgressBar({ videoRef, isLive }: { videoRef: React.RefObject<HTMLVideoElement>, isLive?: boolean }) {
+function ProgressBar({ videoRef, isLive }: { videoRef: React.RefObject<HTMLVideoElement | null>, isLive?: boolean }) {
   const progressRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
