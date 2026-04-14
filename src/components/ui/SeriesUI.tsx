@@ -323,7 +323,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
                {playingEpisode ? (
                   <VideoPlayer 
                       key={playingEpisode.id}
-                      streamUrl={`${account.portal_url.replace(/\/$/, '')}/series/${account.username}/${account.password}/${playingEpisode.id}.${playingEpisode.container_extension || 'mp4'}`} 
+                      streamUrl={`/api/iptv/stream?url=${encodeURIComponent(`${account.portal_url.replace(/\/$/, '')}/series/${account.username}/${account.password}/${playingEpisode.id}.${playingEpisode.container_extension || 'mp4'}`)}`}
                   />
                ) : (
                   <>

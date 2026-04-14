@@ -147,8 +147,9 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
     ).slice(0, 50)
   }, [channelsByCategoryId, searchQuery])
 
+  // Convertir URL HTTP → proxy HTTPS para evitar Mixed Content
   const streamUrl = selectedChannel ? 
-      `${account.portal_url.replace(/\/$/, '')}/live/${account.username}/${account.password}/${selectedChannel.stream_id}.m3u8` : ''
+      `/api/iptv/stream?url=${encodeURIComponent(`${account.portal_url.replace(/\/$/, '')}/live/${account.username}/${account.password}/${selectedChannel.stream_id}.m3u8`)}` : ''
 
   const renderChannelCard = (chan: any) => (
     <div 

@@ -171,7 +171,13 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     const video = videoRef.current
     if (!video || !streamUrl) return
     
-    console.log("🔗 URL del stream solicitada:", streamUrl)
+    // 🔥 Intercepción Crítica: Forzar HTTPS y quitar puerto 8080 para evitar Mixed Content
+    let safeUrl = streamUrl;
+    if (safeUrl.startsWith('http://')) {
+      safeUrl = safeUrl.replace('http://', 'https://').replace(':8080', '');
+    }
+
+    console.log("🔗 URL del stream solicitada:", safeUrl)
     setErrorMsg(null)
     setHasFatalError(false)
     setHlsLevels([])
@@ -202,7 +208,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     video.addEventListener('play', handlePlay)
     video.addEventListener('pause', handlePause)
 
-    const isHls = streamUrl.includes('.m3u8') || streamUrl.includes('.ts')
+    const isHls = safeUrl.includes('.m3u8') || safeUrl.includes('.ts')
 
     // Mute by default on iOS to allow autoplay, wait, better let user intent
     if (isHls && Hls.isSupported()) {
@@ -235,7 +241,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
         }
       })
       
-      hls.loadSource(streamUrl)
+      hls.loadSource(safeUrl)
       hls.attachMedia(video)
       
       hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
@@ -247,12 +253,12 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
       })
       hlsRef.current = hls
     } else if (isHls && video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = streamUrl
+      video.src = safeUrl
       video.addEventListener('loadedmetadata', () => {
         playVideo()
       }, { once: true })
     } else if (!isHls) {
-      video.src = streamUrl
+      video.src = safeUrl
       video.load()
       playVideo()
     }

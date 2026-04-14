@@ -381,7 +381,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
               <div className="relative w-full h-full lg:aspect-video flex items-center justify-center bg-black shrink-0 transition-opacity duration-700 pb-16 lg:pb-0 overflow-y-visible">
                 <VideoPlayer
                   key={playingMovie.stream_id || playingMovie.id}
-                  streamUrl={`${activeAccount.portal_url.replace(/\/$/, '')}/movie/${activeAccount.username}/${activeAccount.password}/${playingMovie.stream_id || playingMovie.id}.${playingMovie.container_extension || 'mp4'}`}
+                  streamUrl={`/api/iptv/stream?url=${encodeURIComponent(`${activeAccount.portal_url.replace(/\/$/, '')}/movie/${activeAccount.username}/${activeAccount.password}/${playingMovie.stream_id || playingMovie.id}.${playingMovie.container_extension || 'mp4'}`)}`}
                 />
               </div>
             ) : (
