@@ -33,12 +33,18 @@ export async function GET(request: NextRequest) {
     const proxyUrl = `${cleanPortalUrl}/player_api.php?username=${username}&password=${password}&action=${action}${extraStr}`
 
     const response = await fetch(proxyUrl, { 
-      headers: { 'User-Agent': 'Mozilla/5.0' },
+      headers: { 
+        'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
+        'Accept': '*/*',
+        'Connection': 'keep-alive'
+      },
       next: { revalidate: 0 }
     })
 
     if (!response.ok) {
-      return NextResponse.json({ error: `Upstream error: ${response.status}` }, { status: response.status })
+      const errorText = await response.text().catch(() => 'No body')
+      console.error(`Upstream error ${response.status} for ${proxyUrl}:`, errorText)
+      return NextResponse.json({ error: `Upstream error: ${response.status}`, details: errorText }, { status: response.status })
     }
 
     const data = await response.json()
