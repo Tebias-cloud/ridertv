@@ -39,11 +39,10 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
     async function fetchAllVOD() {
       setLoadingMovies(true)
       try {
-        const cleanPortalUrl = activeAccount.portal_url.endsWith('/') ? activeAccount.portal_url.slice(0, -1) : activeAccount.portal_url;
-        // Extracción Global: Al no enviar category_id, Xtream retorna todo listado de películas
-        const upstreamUrl = `${cleanPortalUrl}/player_api.php?username=${activeAccount.username}&password=${activeAccount.password}&action=get_vod_streams`
+        // Ruta a través del proxy Next.js para evitar Mixed Content (HTTP→HTTPS)
+        const proxyUrl = `/api/iptv/proxy?username=${activeAccount.username}&password=${activeAccount.password}&portal_url=${encodeURIComponent(activeAccount.portal_url)}&action=get_vod_streams`
         
-        const res = await fetch(upstreamUrl)
+        const res = await fetch(proxyUrl)
         if (res.ok) {
           const text = await res.text()
           try {
@@ -164,10 +163,10 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
     async function fetchDeepInfo() {
       setLoadingInfo(true)
       try {
-        const cleanPortalUrl = activeAccount.portal_url.endsWith('/') ? activeAccount.portal_url.slice(0, -1) : activeAccount.portal_url;
-        const upstreamUrl = `${cleanPortalUrl}/player_api.php?username=${activeAccount.username}&password=${activeAccount.password}&action=get_vod_info&vod_id=${selectedMovie.stream_id}`
+        // Proxy Next.js → evita Mixed Content
+        const proxyUrl = `/api/iptv/proxy?username=${activeAccount.username}&password=${activeAccount.password}&portal_url=${encodeURIComponent(activeAccount.portal_url)}&action=get_vod_info&vod_id=${selectedMovie.stream_id}`
         
-        const res = await fetch(upstreamUrl)
+        const res = await fetch(proxyUrl)
         if (res.ok) {
            const data = await res.json()
            if (data && data.info) {

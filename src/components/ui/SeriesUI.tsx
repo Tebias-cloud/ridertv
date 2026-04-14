@@ -42,14 +42,13 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
     async function fetchAllSeries() {
       setLoadingSeries(true)
       try {
-        const cleanPortalUrl = account.portal_url.endsWith('/') ? account.portal_url.slice(0, -1) : account.portal_url;
-        const upstreamUrl = `${cleanPortalUrl}/player_api.php?username=${account.username}&password=${account.password}&action=get_series`
+        // Proxy Next.js → evita Mixed Content (HTTP→HTTPS)
+        const proxyUrl = `/api/iptv/proxy?username=${account.username}&password=${account.password}&portal_url=${encodeURIComponent(account.portal_url)}&action=get_series`
         
-        const res = await fetch(upstreamUrl)
+        const res = await fetch(proxyUrl)
         if (res.ok) {
           const data = await res.json()
           if (Array.isArray(data)) {
-            // Deduplicar series a nivel de array
             const uniqueSeries = Array.from(new Map(data.map((item: any) => [item.series_id, item])).values())
             setSeries(uniqueSeries)
           }
@@ -152,15 +151,14 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
       setLoadingInfo(true)
       setPlayingEpisode(null)
       try {
-        const cleanPortalUrl = account.portal_url.endsWith('/') ? account.portal_url.slice(0, -1) : account.portal_url;
-        const upstreamUrl = `${cleanPortalUrl}/player_api.php?username=${account.username}&password=${account.password}&action=get_series_info&series_id=${selectedSerie.series_id}`
+        // Proxy Next.js → evita Mixed Content
+        const proxyUrl = `/api/iptv/proxy?username=${account.username}&password=${account.password}&portal_url=${encodeURIComponent(account.portal_url)}&action=get_series_info&series_id=${selectedSerie.series_id}`
         
-        const res = await fetch(upstreamUrl)
+        const res = await fetch(proxyUrl)
         if (res.ok) {
           const data = await res.json()
           if (data && data.episodes) {
             setSerieInfo(data)
-            // Seleccionar primera temporada disponible
             const seasonsConfig = Object.keys(data.episodes)
             if (seasonsConfig.length > 0) setActiveSeason(seasonsConfig[0])
           } else {

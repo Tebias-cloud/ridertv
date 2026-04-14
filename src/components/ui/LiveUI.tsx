@@ -31,10 +31,10 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
     async function fetchAllLive() {
       setLoadingChannels(true)
       try {
-        const cleanPortalUrl = account.portal_url.endsWith('/') ? account.portal_url.slice(0, -1) : account.portal_url;
-        const upstreamUrl = `${cleanPortalUrl}/player_api.php?username=${account.username}&password=${account.password}&action=get_live_streams`
+        // Proxy Next.js → evita Mixed Content (HTTP→HTTPS)
+        const proxyUrl = `/api/iptv/proxy?username=${account.username}&password=${account.password}&portal_url=${encodeURIComponent(account.portal_url)}&action=get_live_streams`
         
-        const res = await fetch(upstreamUrl)
+        const res = await fetch(proxyUrl)
         if (res.ok) {
           const text = await res.text()
           try {
