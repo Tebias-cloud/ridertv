@@ -40,7 +40,7 @@ export default async function LivePage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/login')
+    redirect('/')
   }
 
   const { data: accounts } = await supabase

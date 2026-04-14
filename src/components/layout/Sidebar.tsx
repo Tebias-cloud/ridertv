@@ -75,7 +75,7 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
                 const supabase = createClient()
                 await supabase.auth.signOut()
                 sessionStorage.clear()
-                window.location.href = '/login'
+                window.location.href = '/'
              }}
              className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-zinc-500 hover:text-red-500 hover:bg-red-500/10 transition-all duration-300 font-medium group"
            >

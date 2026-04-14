@@ -83,7 +83,7 @@ export default async function CatalogPage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/login')
+    redirect('/')
   }
 
   const { data: accounts } = await supabase

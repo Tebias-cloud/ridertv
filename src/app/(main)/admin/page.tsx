@@ -6,7 +6,7 @@ import AdminClientPanel from './AdminClientPanel'
 export default async function AdminPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/')
 
   const { createClient: createSupabaseClient } = require('@supabase/supabase-js')
   const supabaseAdmin = createSupabaseClient(
