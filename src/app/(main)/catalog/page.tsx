@@ -12,68 +12,51 @@ export const dynamic = 'force-dynamic'
 async function getCategoriesAndHero(account: any) {
   if (!account || account.status !== 'active') return { categories: [], heroStream: null }
   
-  const cleanPortalUrl = account.portal_url.endsWith('/') ? account.portal_url.slice(0, -1) : account.portal_url;
-  const categoriesUrl = `${cleanPortalUrl}/player_api.php?username=${account.username}&password=${account.password}&action=get_vod_categories`
-  
   try {
-    const res = await fetch(categoriesUrl, { next: { revalidate: 3600 } })
-    if (!res.ok) return { categories: [], heroStream: null }
-    let categories: any[] = []
-    try {
-       const text = await res.text()
-       categories = JSON.parse(text)
-    } catch {
-       console.error("Categories API JSON Parse Error")
-       return { categories: [], heroStream: null }
-    }
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
     
-    if (Array.isArray(categories)) {
-      // 1. Deduplicación
-      const uniqueCategories = Array.from(new Map(categories.map((item: any) => [item.category_id, item])).values())
+    // 1. Categorías via proxy
+    const catUrl = `${baseUrl}/api/iptv/proxy?username=${account.username}&password=${account.password}&portal_url=${encodeURIComponent(account.portal_url)}&action=get_vod_categories`
+    const catRes = await fetch(catUrl, { cache: 'no-store' })
+    
+    if (!catRes.ok) return { categories: [], heroStream: null }
+    
+    const categories = await catRes.json()
+    if (!Array.isArray(categories)) return { categories: [], heroStream: null }
+
+    const banned = ['xxx', 'porn', 'adult', '18+', 'brazzers', 'bangbros', 'venus', 'playboy']
+    const unique = Array.from(new Map(categories.map((c: any) => [c.category_id, c])).values())
+    const safeCategories = unique.filter((cat: any) => {
+      const name = (cat.category_name || '').toLowerCase()
+      return !banned.some(kw => name.includes(kw))
+    })
+
+    // 2. Hero via proxy — buscar una categoría de estrenos
+    let heroStream = null
+    const heroCat = safeCategories.find((c: any) => {
+       const name = (c.category_name || '').toLowerCase()
+       return name.includes('estreno') || name.includes('nuevo') || name.includes('accion') || name.includes('202')
+    }) || safeCategories[0]
+
+    if (heroCat) {
+      const streamsUrl = `${baseUrl}/api/iptv/proxy?username=${account.username}&password=${account.password}&portal_url=${encodeURIComponent(account.portal_url)}&action=get_vod_streams&category_id=${heroCat.category_id}`
+      const streamsRes = await fetch(streamsUrl, { cache: 'no-store' })
       
-      // 2. Fetch de Hero Aleatorio SFW
-      const bannedKeywords = ['xxx', 'porn', 'adult', '18+', 'brazzers', 'bangbros', 'venus', 'playboy'];
-      const safeCategories = uniqueCategories.filter((cat: any) => {
-        const catName = (cat.category_name || '').toLowerCase();
-        return !bannedKeywords.some(keyword => catName.includes(keyword));
-      });
-
-      let heroStream = null;
-      if (safeCategories.length > 0) {
-        // Buscar categoría "estrenos", "nuevos", "202", "accion"
-        const heroCat = safeCategories.find((c: any) => {
-           const name = (c.category_name || '').toLowerCase();
-           return name.includes('estreno') || name.includes('nuevo') || name.includes('accion') || name.includes('202')
-        }) || safeCategories[0];
-
-        const streamsUrl = `${cleanPortalUrl}/player_api.php?username=${account.username}&password=${account.password}&action=get_vod_streams&category_id=${heroCat.category_id}`;
-        const streamsRes = await fetch(streamsUrl, { next: { revalidate: 3600 } });
-        
-        if (streamsRes.ok) {
-           const text = await streamsRes.text();
-           try {
-              const rawStreams = JSON.parse(text);
-              if (Array.isArray(rawStreams) && rawStreams.length > 0) {
-                 const sfwStreams = rawStreams.filter((stream: any) => {
-                    const streamName = (stream.name || '').toLowerCase();
-                    return !bannedKeywords.some(keyword => streamName.includes(keyword));
-                 });
-                 
-                 if (sfwStreams.length > 0) {
-                    heroStream = sfwStreams[Math.floor(Math.random() * Math.min(20, sfwStreams.length))];
-                 }
-              }
-           } catch {
-              console.error("Hero Banner API JSON Parse Error");
-           }
+      if (streamsRes.ok) {
+        const streams = await streamsRes.json()
+        if (Array.isArray(streams) && streams.length > 0) {
+          const sfw = streams.filter((s: any) => !banned.some(kw => (s.name || '').toLowerCase().includes(kw)))
+          if (sfw.length > 0) {
+            heroStream = sfw[Math.floor(Math.random() * Math.min(20, sfw.length))]
+          }
         }
       }
-
-      return { categories: uniqueCategories, heroStream };
     }
-    return { categories: [], heroStream: null }
+
+    return { categories: safeCategories, heroStream }
   } catch (error) {
-    console.error("Fetch Data Error:", error)
+    console.error('[CatalogPage] Error:', error)
     return { categories: [], heroStream: null }
   }
 }
@@ -94,13 +77,10 @@ export default async function CatalogPage() {
 
   const validAccounts = accounts || []
 
-  // 1. Manejo del Empty State Inmersivo
   if (validAccounts.length === 0) {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-8 text-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-zinc-950 w-full relative overflow-hidden">
-         {/* Decorative Background Elements */}
          <div className="absolute top-0 w-full h-1/2 bg-gradient-to-b from-[var(--color-rider-blue)]/5 to-transparent blur-3xl pointer-events-none" />
-         
          <div className="relative z-10 flex flex-col items-center">
              <div className="mb-8 opacity-90 drop-shadow-2xl">
                 <svg className="w-28 h-28 text-zinc-500 drop-shadow-xl" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -111,7 +91,7 @@ export default async function CatalogPage() {
                No hay servicios activos
              </h1>
              <p className="text-zinc-400 max-w-lg mx-auto mb-10 text-lg leading-relaxed">
-               Tu cuenta no cuenta actualmente con un pase digital habilitado. Contacta a soporte para adquirir o renovar tu suscripción VIP y disfrutar del contenido ilimitado.
+               Tu cuenta no cuenta actualmente con un pase digital habilitado. Contacta a soporte para adquirir o renovar tu suscripción VIP.
              </p>
              <Link href="mailto:soporte@rideriptv.com">
                  <button className="px-10 py-4 cursor-pointer bg-white text-zinc-950 hover:bg-zinc-200 transition-all hover:scale-105 rounded-full font-bold shadow-[0_0_40px_rgba(255,255,255,0.15)] flex items-center gap-2">
@@ -123,17 +103,13 @@ export default async function CatalogPage() {
     )
   }
 
-  // Obtenemos la cuenta activa
-  const activeAccount = validAccounts.find(a => a.status === 'active') || validAccounts[0]
-  
-  // 2. Traer Categorías (Grilla Principal) y Hero
+  const activeAccount = validAccounts.find((a: any) => a.status === 'active') || validAccounts[0]
   const { categories, heroStream } = await getCategoriesAndHero(activeAccount)
 
   return (
     <div className="relative text-white overflow-hidden pb-32">
       <header className="fixed top-0 w-full z-50 bg-gradient-to-b from-zinc-950 via-zinc-950/80 to-transparent pt-6 pb-12 px-4 sm:px-8 pointer-events-none">
         <div className="pointer-events-auto">
-          {/* Ocultamos el logo original ya que el Sidebar lo tiene, o lo mantenemos minimizado para mobile */}
           <div className="md:hidden">
             <Logo />
           </div>
