@@ -32,11 +32,15 @@ export async function GET(request: NextRequest) {
     const extraStr = extraParams.toString() ? `&${extraParams.toString()}` : ''
     const proxyUrl = `${cleanPortalUrl}/player_api.php?username=${username}&password=${password}&action=${action}${extraStr}`
 
+    const host = new URL(cleanPortalUrl).origin
+
     const response = await fetch(proxyUrl, { 
       headers: { 
-        'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
+        'User-Agent': 'IPTVSmartersPlayer/3.0.0 (iPad; iOS 15.1; Scale/2.00)',
         'Accept': '*/*',
-        'Connection': 'keep-alive'
+        'Referer': `${host}/`,
+        'Origin': host,
+        'Connection': 'keep-alive',
       },
       next: { revalidate: 0 }
     })
