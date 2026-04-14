@@ -1,65 +1,142 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import { useState, useEffect, Suspense } from 'react'
+import { loginAction } from '@/actions/auth'
+import { useSearchParams } from 'next/navigation'
+import { Eye, EyeOff } from 'lucide-react'
+
+// WhatsApp funnel URL
+const WHATSAPP_URL = "https://wa.me/56961391859?text=Hola%20Rober,%20necesito%20ayuda%20con%20Rider%20TV"
+
+function LoginForm() {
+  const searchParams = useSearchParams()
+  const errorParam = searchParams.get('error')
+  
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+
+  useEffect(() => {
+    if (errorParam === 'suspended') {
+      setErrorMsg('Tu cuenta ha expirado o ha sido suspendida. Contacta al soporte.')
+    }
+  }, [errorParam])
+
+  async function handleAction(formData: FormData) {
+    setIsLoading(true)
+    setErrorMsg(null)
+
+    try {
+      const response = await loginAction(formData)
+      if (response?.error) {
+        setErrorMsg(response.error)
+      }
+    } catch (err: any) {
+      if (err.message !== 'NEXT_REDIRECT') {
+         setErrorMsg('Usuario o contraseña incorrectos.')
+      } else {
+        throw err;
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="relative flex flex-col items-center justify-center min-h-screen bg-slate-950 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      {/* Decorative Glow Blobs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40rem] h-[40rem] bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40rem] h-[40rem] bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+      
+      <div className="relative z-10 w-full max-w-2xl space-y-12">
+        <div className="flex flex-col items-center">
+          <h1 className="text-center text-5xl md:text-6xl tracking-[0.1em] font-extrabold uppercase bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-blue-500 drop-shadow-lg">
+            Rider TV
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-4 text-center text-xl text-zinc-400 font-medium tracking-wide">
+            Streaming sin límites
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+
+        <form className="mt-16 space-y-8" action={handleAction}>
+          <div className="space-y-6">
+            <div className="relative">
+              <label htmlFor="username" className="sr-only">Usuario</label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                required
+                className="block w-full px-5 py-5 border border-slate-800 bg-slate-900/80 backdrop-blur-sm placeholder-zinc-500 text-zinc-100 rounded-xl text-xl sm:text-2xl focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500 transition-colors duration-200 shadow-xl"
+                placeholder="Usuario"
+              />
+            </div>
+            
+            <div className="relative rounded-xl">
+              <label htmlFor="password" className="sr-only">Contraseña</label>
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                className="block w-full px-5 py-5 pr-16 border border-slate-800 bg-slate-900/80 backdrop-blur-sm placeholder-zinc-500 text-zinc-100 rounded-xl text-xl sm:text-2xl focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500 shadow-xl transition-colors duration-200"
+                placeholder="Contraseña"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-3 my-auto h-12 w-12 flex items-center justify-center text-zinc-400 hover:text-white focus:text-white rounded-lg focus:outline-none focus:ring-4 focus:ring-red-500 focus:bg-slate-800 transition-all z-10"
+                aria-label={showPassword ? "Ocultar Contraseña" : "Mostrar Contraseña"}
+              >
+                {showPassword ? <EyeOff className="w-7 h-7 sm:w-8 sm:h-8" /> : <Eye className="w-7 h-7 sm:w-8 sm:h-8" />}
+              </button>
+            </div>
+          </div>
+
+          {errorMsg && (
+            <div className="bg-red-500/10 border-l-4 border-red-500 p-4 rounded text-center animate-in fade-in duration-200">
+              <p className="text-xl font-medium text-red-500">
+                {errorMsg}
+              </p>
+            </div>
+          )}
+
+          <div className="pt-8 flex flex-col items-center">
+            <button
+              disabled={isLoading}
+              type="submit"
+              className="group relative w-full flex justify-center py-5 px-4 border border-transparent text-xl sm:text-2xl font-bold rounded-xl text-white bg-red-600 hover:bg-blue-600 focus:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors duration-200 shadow-xl"
+            >
+              {isLoading ? 'Conectando...' : 'Iniciar Sesión'}
+            </button>
+            
+            <a 
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-8 text-sm text-zinc-400 hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:text-red-400 rounded py-2 px-4"
+            >
+              ¿Necesitas una cuenta o soporte? Contáctanos por WhatsApp
+            </a>
+          </div>
+        </form>
+      </div>
     </div>
-  );
+  )
+}
+
+export default function RootHomePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-slate-950">
+        <h1 className="text-center text-5xl md:text-6xl tracking-[0.1em] font-extrabold uppercase bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-blue-500">
+            Rider TV
+        </h1>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
+  )
 }
