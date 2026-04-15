@@ -276,17 +276,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
       {/* RENDERIZADO CONDICIONAL DE PANTALLA */}
       {/* ======================= */}
 
-      <div className="pt-24 max-w-[2000px] mx-auto px-4 sm:px-8 mb-4 relative z-50">
-        <div className="bg-amber-500/10 border border-amber-500/50 rounded-xl p-4 flex items-start gap-4 shadow-lg backdrop-blur-sm">
-          <span className="text-amber-500 text-xl font-bold mt-0.5">⚠️</span>
-          <div>
-            <h4 className="text-amber-500 font-bold mb-1">Aviso Importante de Reproducción</h4>
-            <p className="text-sm text-amber-200/90 leading-relaxed">
-              Para reproducir el contenido en alta velocidad, haz clic en el candado 🔒 de la barra de direcciones de tu navegador, ve a <strong>Configuración del sitio</strong> y cambia <strong>Contenido no seguro</strong> a <strong>Permitir</strong>. Luego recarga la página.
-            </p>
-          </div>
-        </div>
-      </div>
+
 
       {searchQuery ? (
         <section className="relative z-20 pt-32 px-4 sm:px-8 max-w-[2000px] mx-auto pb-32 min-h-screen">
