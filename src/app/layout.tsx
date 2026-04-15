@@ -22,9 +22,7 @@ export default function RootLayout({
       lang="es"
       className={`${inter.variable} h-full antialiased dark`}
     >
-      <head>
-        <meta httpEquiv="Content-Security-Policy" content="upgrade-insecure-requests" />
-      </head>
+      <head />
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

@@ -147,9 +147,9 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
     ).slice(0, 50)
   }, [channelsByCategoryId, searchQuery])
 
-  // Convertir URL HTTP → proxy HTTPS para evitar Mixed Content
+  // Usar URL directa del proveedor
   const streamUrl = selectedChannel ? 
-      `/api/iptv/stream?url=${encodeURIComponent(`${account.portal_url.replace(/\/$/, '')}/live/${account.username}/${account.password}/${selectedChannel.stream_id}.m3u8`)}` : ''
+      `${account.portal_url.replace(/\/$/, '')}/live/${account.username}/${account.password}/${selectedChannel.stream_id}.m3u8` : ''
 
   const renderChannelCard = (chan: any) => (
     <div 
@@ -207,6 +207,18 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
              onChange={(e) => setSearchQuery(e.target.value)}
              className="w-full bg-zinc-900 border border-zinc-800 rounded-full py-3 px-6 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[var(--color-rider-blue)]/50 focus:ring-1 focus:ring-[var(--color-rider-blue)]/50 transition-all shadow-inner"
            />
+        </div>
+      </div>
+
+      <div className="max-w-[2000px] mx-auto mb-8 relative z-20">
+        <div className="bg-amber-500/10 border border-amber-500/50 rounded-xl p-4 flex items-start gap-4 shadow-lg backdrop-blur-sm">
+          <span className="text-amber-500 text-xl font-bold mt-0.5">⚠️</span>
+          <div>
+            <h4 className="text-amber-500 font-bold mb-1">Aviso Importante de Reproducción</h4>
+            <p className="text-sm text-amber-200/90 leading-relaxed">
+              Para reproducir el contenido en alta velocidad, haz clic en el candado 🔒 de la barra de direcciones de tu navegador, ve a <strong>Configuración del sitio</strong> y cambia <strong>Contenido no seguro</strong> a <strong>Permitir</strong>. Luego recarga la página.
+            </p>
+          </div>
         </div>
       </div>
 

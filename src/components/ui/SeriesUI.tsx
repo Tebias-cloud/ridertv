@@ -242,6 +242,18 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
         </div>
       </div>
 
+      <div className="max-w-[2000px] mx-auto mb-8 px-4 sm:px-8 relative z-20">
+        <div className="bg-amber-500/10 border border-amber-500/50 rounded-xl p-4 flex items-start gap-4 shadow-lg backdrop-blur-sm">
+          <span className="text-amber-500 text-xl font-bold mt-0.5">⚠️</span>
+          <div>
+            <h4 className="text-amber-500 font-bold mb-1">Aviso Importante de Reproducción</h4>
+            <p className="text-sm text-amber-200/90 leading-relaxed">
+              Para reproducir el contenido en alta velocidad, haz clic en el candado 🔒 de la barra de direcciones de tu navegador, ve a <strong>Configuración del sitio</strong> y cambia <strong>Contenido no seguro</strong> a <strong>Permitir</strong>. Luego recarga la página.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {searchQuery ? (
         <section className="relative z-20 pt-8 px-4 sm:px-8 max-w-[2000px] mx-auto pb-32">
           <div className="mb-4">
@@ -323,7 +335,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
                {playingEpisode ? (
                   <VideoPlayer 
                       key={playingEpisode.id}
-                      streamUrl={`/api/iptv/stream?url=${encodeURIComponent(`${account.portal_url.replace(/\/$/, '')}/series/${account.username}/${account.password}/${playingEpisode.id}.${playingEpisode.container_extension || 'mp4'}`)}`}
+                      streamUrl={`${account.portal_url.replace(/\/$/, '')}/series/${account.username}/${account.password}/${playingEpisode.id}.${playingEpisode.container_extension || 'mp4'}`}
                   />
                ) : (
                   <>
