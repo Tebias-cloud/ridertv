@@ -391,10 +391,15 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
 
             {playingMovie ? (
               <div className="relative w-full h-full lg:aspect-video flex items-center justify-center bg-black shrink-0 transition-opacity duration-700 pb-16 lg:pb-0 overflow-y-visible">
-                <VideoPlayer
-                  key={playingMovie.stream_id || playingMovie.id}
-                  streamUrl={`${activeAccount.portal_url.replace(/\/$/, '')}/movie/${activeAccount.username}/${activeAccount.password}/${playingMovie.stream_id || playingMovie.id}.${playingMovie.container_extension || 'mp4'}`}
-                />
+                {(() => {
+                  const formatCompatibleUrl = (url: string) => url.replace(/\.mkv$/i, '.mp4').replace(/\.avi$/i, '.mp4').replace(/\.ts$/i, '.m3u8');
+                  return (
+                    <VideoPlayer
+                      key={playingMovie.stream_id || playingMovie.id}
+                      streamUrl={formatCompatibleUrl(`${activeAccount.portal_url.replace(/\/$/, '')}/movie/${activeAccount.username}/${activeAccount.password}/${playingMovie.stream_id || playingMovie.id}.${playingMovie.container_extension || 'mp4'}`)}
+                    />
+                  );
+                })()}
               </div>
             ) : (
               <div className="relative w-full h-full flex flex-col justify-end bg-black">

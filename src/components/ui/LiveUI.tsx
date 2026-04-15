@@ -147,9 +147,11 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
     ).slice(0, 50)
   }, [channelsByCategoryId, searchQuery])
 
+  const formatCompatibleUrl = (url: string) => url.replace(/\.mkv$/i, '.mp4').replace(/\.avi$/i, '.mp4').replace(/\.ts$/i, '.m3u8');
+
   // Usar URL directa del proveedor
   const streamUrl = selectedChannel ? 
-      `${account.portal_url.replace(/\/$/, '')}/live/${account.username}/${account.password}/${selectedChannel.stream_id}.m3u8` : ''
+      formatCompatibleUrl(`${account.portal_url.replace(/\/$/, '')}/live/${account.username}/${account.password}/${selectedChannel.stream_id}.m3u8`) : ''
 
   const renderChannelCard = (chan: any) => (
     <div 

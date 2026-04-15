@@ -333,10 +333,15 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
 
             <div className="w-full relative shrink-0 transition-all duration-700 ease-in-out bg-black" style={{ height: playingEpisode ? '45vh' : '40vh', minHeight: playingEpisode ? '250px' : '200px' }}>
                {playingEpisode ? (
-                  <VideoPlayer 
-                      key={playingEpisode.id}
-                      streamUrl={`${account.portal_url.replace(/\/$/, '')}/series/${account.username}/${account.password}/${playingEpisode.id}.${playingEpisode.container_extension || 'mp4'}`}
-                  />
+                  (() => {
+                    const formatCompatibleUrl = (url: string) => url.replace(/\.mkv$/i, '.mp4').replace(/\.avi$/i, '.mp4').replace(/\.ts$/i, '.m3u8');
+                    return (
+                      <VideoPlayer 
+                          key={playingEpisode.id}
+                          streamUrl={formatCompatibleUrl(`${account.portal_url.replace(/\/$/, '')}/series/${account.username}/${account.password}/${playingEpisode.id}.${playingEpisode.container_extension || 'mp4'}`)}
+                      />
+                    );
+                  })()
                ) : (
                   <>
                      <img 
