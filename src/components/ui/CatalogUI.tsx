@@ -212,7 +212,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
       onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.click() }}
       role="button"
       tabIndex={0}
-      className="relative rounded-2xl overflow-hidden shrink-0 w-36 sm:w-48 xl:w-56 aspect-[2/3] transition-transform duration-300 ease-out transform-gpu will-change-transform text-left group bg-zinc-950 border border-transparent hover:border-white/20 focus:outline-none focus:ring-[6px] focus:ring-white focus:scale-[1.05] focus:z-50 focus:border-white hover:-translate-y-2 cursor-pointer"
+      className="nav-item relative rounded-2xl overflow-hidden shrink-0 w-36 sm:w-48 xl:w-56 aspect-[2/3] transition-transform duration-300 ease-out transform-gpu will-change-transform text-left group bg-zinc-950 border border-transparent hover:border-white/20 focus:outline-none focus:ring-[6px] focus:ring-white focus:scale-[1.05] focus:z-50 focus:border-white hover:-translate-y-2 cursor-pointer"
     >
       <button
         onClick={(e) => { e.stopPropagation(); toggleFavorite({ id: mov.stream_id, type: 'movie', data: mov }); }}
@@ -265,6 +265,13 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
               placeholder="Buscar película por nombre o ID global..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  const firstItem = document.querySelector('.nav-item, button:not([disabled])') as HTMLElement;
+                  if (firstItem) firstItem.focus();
+                }
+              }}
               className="w-full bg-zinc-900 border border-zinc-700/50 rounded-full py-3.5 pl-11 pr-6 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[var(--color-rider-blue)] focus:ring-1 focus:ring-[var(--color-rider-blue)] transition-all shadow-inner"
             />
           </div>

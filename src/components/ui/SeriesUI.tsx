@@ -189,7 +189,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
         onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.click() }}
         role="button"
         tabIndex={0}
-        className="relative rounded-[1.5rem] shrink-0 w-36 sm:w-48 xl:w-56 overflow-hidden transition-transform duration-300 ease-out transform-gpu will-change-transform text-left group border border-transparent hover:border-rose-500/50 hover:shadow-[0_0_40px_rgba(244,63,94,0.2)] aspect-[2/3] hover:-translate-y-2 bg-zinc-900 cursor-pointer focus:outline-none focus:ring-[6px] focus:ring-white focus:scale-[1.05] focus:z-50 focus:-translate-y-2"
+        className="nav-item relative rounded-[1.5rem] shrink-0 w-36 sm:w-48 xl:w-56 overflow-hidden transition-transform duration-300 ease-out transform-gpu will-change-transform text-left group border border-transparent hover:border-rose-500/50 hover:shadow-[0_0_40px_rgba(244,63,94,0.2)] aspect-[2/3] hover:-translate-y-2 bg-zinc-900 cursor-pointer focus:outline-none focus:ring-[6px] focus:ring-white focus:scale-[1.05] focus:z-50 focus:-translate-y-2"
      >
         <button 
           onClick={(e) => { e.stopPropagation(); toggleFavorite({ id: ser.series_id, type: 'series', data: ser }); }}
@@ -237,6 +237,13 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
              placeholder="Buscar serie..."
              value={searchQuery}
              onChange={(e) => setSearchQuery(e.target.value)}
+             onKeyDown={(e) => {
+               if (e.key === 'ArrowDown') {
+                 e.preventDefault();
+                 const firstItem = document.querySelector('.nav-item, button:not([disabled])') as HTMLElement;
+                 if (firstItem) firstItem.focus();
+               }
+             }}
              className="w-full bg-zinc-900 border border-zinc-800 rounded-full py-3 px-6 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 transition-all shadow-inner"
            />
         </div>

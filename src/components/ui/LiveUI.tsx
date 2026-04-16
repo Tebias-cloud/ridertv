@@ -160,7 +160,7 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
        onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.click() }}
        role="button"
        tabIndex={0}
-       className={`relative rounded-xl overflow-hidden shrink-0 w-44 sm:w-60 aspect-[4/3] sm:aspect-video transition-all duration-300 ease-out transform-gpu will-change-transform text-left group bg-zinc-900/60 backdrop-blur-sm border border-white/5 shadow-md hover:shadow-2xl hover:border-red-500 hover:bg-zinc-800 hover:-translate-y-2 focus:outline-none focus:ring-4 focus:ring-red-500 cursor-pointer focus:-translate-y-2 flex flex-col`}
+       className={`nav-item relative rounded-xl overflow-hidden shrink-0 w-44 sm:w-60 aspect-[4/3] sm:aspect-video transition-all duration-300 ease-out transform-gpu will-change-transform text-left group bg-zinc-900/60 backdrop-blur-sm border border-white/5 shadow-md hover:shadow-2xl hover:border-red-500 hover:bg-zinc-800 hover:-translate-y-2 focus:outline-none focus:ring-4 focus:ring-red-500 cursor-pointer focus:-translate-y-2 flex flex-col`}
     >
        <button 
           onClick={(e) => { e.stopPropagation(); toggleFavorite({ id: chan.stream_id, type: 'live', data: chan }); }}
@@ -205,9 +205,16 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
            <input 
              type="search" 
              placeholder={"Buscar canal..."}
-             value={searchQuery}
-             onChange={(e) => setSearchQuery(e.target.value)}
-             className="w-full bg-zinc-900 border border-zinc-800 rounded-full py-3 px-6 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[var(--color-rider-blue)]/50 focus:ring-1 focus:ring-[var(--color-rider-blue)]/50 transition-all shadow-inner"
+                 value={searchQuery}
+                 onChange={(e) => setSearchQuery(e.target.value)}
+                 onKeyDown={(e) => {
+                   if (e.key === 'ArrowDown') {
+                     e.preventDefault();
+                     const firstItem = document.querySelector('.nav-item, button:not([disabled])') as HTMLElement;
+                     if (firstItem) firstItem.focus();
+                   }
+                 }}
+                 className="w-full bg-zinc-900 border border-zinc-800 rounded-full py-3 px-6 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[var(--color-rider-blue)]/50 focus:ring-1 focus:ring-[var(--color-rider-blue)]/50 transition-all shadow-inner"
            />
         </div>
       </div>

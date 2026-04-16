@@ -413,7 +413,6 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
             autoPlay
             playsInline
             muted={isMuted}
-            crossOrigin="anonymous"
             style={{ backgroundColor: '#000' }}
           />
 
