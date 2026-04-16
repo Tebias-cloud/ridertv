@@ -71,7 +71,7 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
           {links.map(link => {
             const isActive = pathname === link.href || pathname.startsWith(link.href) && link.href !== '/catalog'
             return (
-              <Link key={link.name} href={link.href} className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 ease-out transform-gpu ${isActive ? 'bg-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] scale-[1.02]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5 hover:scale-[1.02]'}`}>
+              <Link key={link.name} href={link.href} prefetch={false} className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 ease-out transform-gpu ${isActive ? 'bg-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] scale-[1.02]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5 hover:scale-[1.02]'}`}>
                 <link.icon className={`w-5 h-5 ${isActive ? 'text-[var(--color-rider-blue)]' : ''}`} />
                 {link.name}
               </Link>

@@ -199,6 +199,19 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
   const [movieInfo, setMovieInfo] = useState<any | null>(null)
   const [loadingInfo, setLoadingInfo] = useState(false)
 
+  // Focus Trapping Logic
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpatialNavigation = require('spatial-navigation-js')
+      if (selectedMovie) {
+        // Pausar navegación global y enfocar solo el modal
+        // SpatialNavigation.pause() // No pausamos todo, sino que definimos una zona
+        // Pero para esta versión simple, solo nos aseguramos de que el foco inicial sea el botón
+        setTimeout(() => playBtnRef.current?.focus(), 150)
+      }
+    }
+  }, [selectedMovie])
+
   useEffect(() => {
     if (!selectedMovie) {
       setMovieInfo(null)
@@ -247,7 +260,6 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
       <button
         onClick={(e) => { e.stopPropagation(); toggleFavorite({ id: mov.stream_id, type: 'movie', data: mov }); }}
         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.click() }}
-        tabIndex={0}
         className={`absolute top-2 left-2 z-[30] p-2 rounded-full bg-black/40 hover:bg-black/80 backdrop-blur-md transition-all outline-none focus:ring-4 focus:ring-rose-500 ${isFavorite(mov.stream_id, 'movie') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'}`}
         title="Guardar en Favoritos"
       >

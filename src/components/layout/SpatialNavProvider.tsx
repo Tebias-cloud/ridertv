@@ -21,12 +21,31 @@ export function SpatialNavProvider({ children }: { children: React.ReactNode }) 
           straightOnly: false,
           straightOverlapThreshold: 0.5,
         })
+
+        // 🔥 UX: Auto-scroll centrado para TV
+        const handleFocused = (e: any) => {
+          const element = e.target;
+          if (element) {
+            element.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+              inline: 'center'
+            });
+          }
+        };
+
+        window.addEventListener('sn:focused', handleFocused);
+        (window as any)._snHandler = handleFocused;
+
       } catch (e) {
         console.warn('SpatialNavigation init error:', e)
       }
 
       return () => {
         try {
+           if ((window as any)._snHandler) {
+             window.removeEventListener('sn:focused', (window as any)._snHandler);
+           }
            SpatialNavigation.uninit()
         } catch (e) {}
       }

@@ -189,9 +189,28 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     // ==========================================
     // INTEGRACIÓN NATIVA (ANDROID TV / iOS) - SOLO VOD
     // ==========================================
+    // ==========================================
+    // ESCUCHA DEL BOTÓN ATRÁS (HARDWARE BACK BUTTON)
+    // ==========================================
+    let backListener: any = null;
+    const setupBackListener = async () => {
+      backListener = await App.addListener('backButton', () => {
+        console.log("Hardware Back Button pressed. Closing player...");
+        // 1. Detener motores nativos (Capacitor)
+        if (Capacitor.isNativePlatform()) {
+          CapacitorVideoPlayer.stopAllPlayers().catch(() => {});
+        }
+        // 2. Volver al catálogo (React State)
+        router.push('/catalog');
+      });
+    };
+    setupBackListener();
+
+    // ==========================================
+    // INTEGRACIÓN NATIVA (ANDROID TV / iOS) - SOLO VOD
+    // ==========================================
     if (typeof window !== 'undefined' && Capacitor?.isNativePlatform() && !isLive) {
       let isExiting = false;
-      let backListener: any = null;
 
       const initNative = async () => {
         setLoadingNative(true);
@@ -203,21 +222,15 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
             ;(CapacitorVideoPlayer as any).addListener('jeepCapVideoPlayerExit', () => {
               if (isExiting) return;
               isExiting = true;
-              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+              router.push('/catalog');
             });
 
             ;(CapacitorVideoPlayer as any).addListener('jeepCapVideoPlayerEnded', () => {
               if (isExiting) return;
               isExiting = true;
-              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+              router.push('/catalog');
             });
           }
-
-          // Interceptar el botón atrás físico/control remoto para que no cierre la app
-          backListener = await App.addListener('backButton', () => {
-             console.log("Back button pressed, stopping native player...");
-             CapacitorVideoPlayer.stopAllPlayers().catch(() => {});
-          });
 
           await CapacitorVideoPlayer.initPlayer({
             mode: 'fullscreen',
@@ -228,7 +241,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
             volume: 1.0,      // Forzar volumen al máximo
             isMuted: false,   // Asegurar que no inicie silenciado
             headers: {
-              'User-Agent': 'IPTVSmarters/1.0', // El servidor IPTV requiere un UA conocido
+              'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18', // UA más estandarizado para bypass de servidores IPTV
               'Referer': safeUrl.split('/').slice(0, 3).join('/') // Referer base del dominio
             }
           } as any);
@@ -254,9 +267,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
 
       return () => {
         isExiting = true;
-        if (backListener) {
-          backListener.remove();
-        }
+        if (backListener) backListener.remove();
         if ((CapacitorVideoPlayer as any).removeAllListeners) {
           ;(CapacitorVideoPlayer as any).removeAllListeners().catch(() => {});
         }
