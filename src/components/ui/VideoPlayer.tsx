@@ -217,8 +217,18 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
             url: safeUrl,
             playerId: 'rider-fullscreen',
             componentTag: 'capacitor-video-player',
-            chromecast: false // Desactivar para evitar crash de CastContext en Android TV
-          });
+            chromecast: false, // Desactivar para evitar crash de CastContext en Android TV
+            volume: 1.0,      // Forzar volumen al máximo
+            isMuted: false    // Asegurar que no inicie silenciado
+          } as any);
+
+          // Forzado de volumen adicional para asegurar que el motor de audio nativo se active
+          if ((CapacitorVideoPlayer as any).setVolume) {
+            await (CapacitorVideoPlayer as any).setVolume({
+              playerId: 'rider-fullscreen',
+              volume: 1.0
+            });
+          }
           
           setLoadingNative(false);
         } catch (err) {
