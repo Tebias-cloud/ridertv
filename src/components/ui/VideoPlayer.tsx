@@ -219,7 +219,10 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
             componentTag: 'capacitor-video-player',
             chromecast: false, // Desactivar para evitar crash de CastContext en Android TV
             volume: 1.0,      // Forzar volumen al máximo
-            isMuted: false    // Asegurar que no inicie silenciado
+            isMuted: false,   // Asegurar que no inicie silenciado
+            headers: {
+              'User-Agent': 'IPTVSmarters/1.0' // El servidor IPTV requiere un UA conocido para liberar el stream
+            }
           } as any);
 
           // Forzado de volumen adicional para asegurar que el motor de audio nativo se active

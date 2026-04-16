@@ -3,11 +3,10 @@
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+export function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  // const pathname = usePathname()
   const [activeAccount, setActiveAccount] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -21,7 +20,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         return
       }
 
-      // Fetch the active account to load into the Sidebar globally
       const { data: accounts } = await supabase
         .from('external_accounts')
         .select('*')
