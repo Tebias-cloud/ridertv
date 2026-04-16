@@ -6,6 +6,7 @@ import { Clapperboard, MonitorPlay, X, Play, TvMinimal, Heart } from 'lucide-rea
 import { VideoPlayer } from '@/components/ui/VideoPlayer'
 import { useFavorites } from '@/hooks/useFavorites'
 import { VirtualRow } from '@/components/ui/VirtualRow'
+import { fetchIptv, getBaseUrl } from '@/lib/iptv'
 
 const BANNED = ['xxx', 'adult', '18+', 'porn']
 
@@ -43,11 +44,11 @@ function SeriesCategoryRow({ category, account, renderSerieCard, onSeriesLoaded 
       setLoading(true)
       setError(false)
       try {
-        const proxyUrl = `${(account.portal_url.endsWith('/') ? account.portal_url.slice(0, -1) : account.portal_url)}/player_api.php?username=${account.username}&password=${account.password}&action=get_series&category_id=${category.category_id}`
-        const res = await fetch(proxyUrl)
-        if (res.ok) {
-          const data = await res.json()
-          if (Array.isArray(data)) {
+        const baseUrl = getBaseUrl(account.portal_url)
+        const url = `${baseUrl}/player_api.php?username=${account.username}&password=${account.password}&action=get_series&category_id=${category.category_id}`
+        const data = await fetchIptv(url)
+        
+        if (Array.isArray(data)) {
             const sfw = data.filter(s => !BANNED.some(kw => String(s.name || '').toLowerCase().includes(kw)))
             const sorted = sfw.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0))
             setSeries(sorted)
@@ -55,9 +56,6 @@ function SeriesCategoryRow({ category, account, renderSerieCard, onSeriesLoaded 
           } else {
             setError(true)
           }
-        } else {
-          setError(true)
-        }
       } catch (err) {
         console.error(`Error fetching series category ${category.category_id}:`, err)
         setError(true)

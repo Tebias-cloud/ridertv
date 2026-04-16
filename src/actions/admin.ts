@@ -1,3 +1,4 @@
+"use server"
 import { createClient } from '@supabase/supabase-js'
 
 // Inicializamos el cliente de administración con la Service Role Key 
@@ -8,8 +9,8 @@ const getSupabaseAdmin = () => {
   const key = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY!
   
   if (!key) {
-    console.error('Falta la clave Service Role. Si estás en frontend puro, añade NEXT_PUBLIC_ a tu SUPABASE_SERVICE_ROLE_KEY en el .env');
-    throw new Error('Missing Supabase Admin Key');
+    // Silent in production/client bundle to avoid console noise
+    throw new Error('Supabase Service Role key is required but missing.');
   }
   
   return createClient(url, key, {

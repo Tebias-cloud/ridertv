@@ -9,18 +9,17 @@ import { CatalogUI } from '@/components/ui/CatalogUI'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { fetchIptv, getBaseUrl } from '@/lib/iptv'
 
 async function getCategoriesAndHero(account: any) {
   if (!account || account.status !== 'active') return { categories: [], heroStream: null }
   
   try {
     // 1. Categorías directas
-    const catUrl = `${(account.portal_url.endsWith('/') ? account.portal_url.slice(0, -1) : account.portal_url)}/player_api.php?username=${account.username}&password=${account.password}&action=get_vod_categories`
-    const catRes = await fetch(catUrl, { cache: 'no-store' })
+    const baseUrl = getBaseUrl(account.portal_url)
+    const catUrl = `${baseUrl}/player_api.php?username=${account.username}&password=${account.password}&action=get_vod_categories`
+    const categories = await fetchIptv(catUrl)
     
-    if (!catRes.ok) return { categories: [], heroStream: null }
-    
-    const categories = await catRes.json()
     if (!Array.isArray(categories)) return { categories: [], heroStream: null }
 
     const banned = ['xxx', 'porn', 'adult', '18+', 'brazzers', 'bangbros', 'venus', 'playboy']
@@ -38,16 +37,13 @@ async function getCategoriesAndHero(account: any) {
     }) || safeCategories[0]
 
     if (heroCat) {
-      const streamsUrl = `${(account.portal_url.endsWith('/') ? account.portal_url.slice(0, -1) : account.portal_url)}/player_api.php?username=${account.username}&password=${account.password}&action=get_vod_streams&category_id=${heroCat.category_id}`
-      const streamsRes = await fetch(streamsUrl, { cache: 'no-store' })
+      const streamsUrl = `${baseUrl}/player_api.php?username=${account.username}&password=${account.password}&action=get_vod_streams&category_id=${heroCat.category_id}`
+      const streams = await fetchIptv(streamsUrl)
       
-      if (streamsRes.ok) {
-        const streams = await streamsRes.json()
-        if (Array.isArray(streams) && streams.length > 0) {
-          const sfw = streams.filter((s: any) => !banned.some(kw => (s.name || '').toLowerCase().includes(kw)))
-          if (sfw.length > 0) {
-            heroStream = sfw[Math.floor(Math.random() * Math.min(20, sfw.length))]
-          }
+      if (Array.isArray(streams) && streams.length > 0) {
+        const sfw = streams.filter((s: any) => !banned.some(kw => (s.name || '').toLowerCase().includes(kw)))
+        if (sfw.length > 0) {
+          heroStream = sfw[Math.floor(Math.random() * Math.min(20, sfw.length))]
         }
       }
     }

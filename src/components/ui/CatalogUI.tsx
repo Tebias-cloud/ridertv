@@ -7,6 +7,7 @@ import { Search, Flame, Clock, Play, X, Compass, CheckCircle2, ChevronRight, Vid
 import { VideoPlayer } from '@/components/ui/VideoPlayer'
 import { useFavorites } from '@/hooks/useFavorites'
 import { VirtualRow } from '@/components/ui/VirtualRow'
+import { fetchIptv, getBaseUrl } from '@/lib/iptv'
 
 // ==========================
 // COMPONENTE: CATEGORY ROW (Lazy Loading)
@@ -44,11 +45,11 @@ function CategoryRow({ category, activeAccount, renderMovieCard, onMoviesLoaded 
       setLoading(true)
       setError(false)
       try {
-        const proxyUrl = `${(activeAccount.portal_url.endsWith('/') ? activeAccount.portal_url.slice(0, -1) : activeAccount.portal_url)}/player_api.php?username=${activeAccount.username}&password=${activeAccount.password}&action=get_vod_streams&category_id=${category.category_id}`
-        const res = await fetch(proxyUrl)
-        if (res.ok) {
-          const data = await res.json()
-          if (Array.isArray(data)) {
+        const baseUrl = getBaseUrl(activeAccount.portal_url)
+        const url = `${baseUrl}/player_api.php?username=${activeAccount.username}&password=${activeAccount.password}&action=get_vod_streams&category_id=${category.category_id}`
+        const data = await fetchIptv(url)
+        
+        if (Array.isArray(data)) {
             // Sort by rating desc
             const sorted = data.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0))
             setMovies(sorted)
@@ -56,9 +57,6 @@ function CategoryRow({ category, activeAccount, renderMovieCard, onMoviesLoaded 
           } else {
             setError(true)
           }
-        } else {
-          setError(true)
-        }
       } catch (err) {
         console.error(`Error fetching category ${category.category_id}:`, err)
         setError(true)

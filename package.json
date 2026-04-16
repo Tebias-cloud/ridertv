@@ -4,10 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "build:mobile": "npm run build && npx cap sync android"
+    "build": "node scripts/toggle-server.js enable && next build",
+    "build:mobile": "node scripts/toggle-server.js disable && npx cross-env EXPORT_MODE=true next build && npx cap sync android",
+    "start": "node scripts/toggle-server.js enable && next start"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",

@@ -6,6 +6,7 @@ import { MonitorPlay, Tv, ArrowLeft, X, Heart } from 'lucide-react'
 import { VideoPlayer } from '@/components/ui/VideoPlayer'
 import { useFavorites } from '@/hooks/useFavorites'
 import { VirtualRow } from '@/components/ui/VirtualRow'
+import { fetchIptv, getBaseUrl } from '@/lib/iptv'
 
 // ==========================
 // COMPONENTE: LIVE CATEGORY ROW (Lazy Loading)
@@ -41,19 +42,16 @@ function LiveCategoryRow({ category, account, renderChannelCard, onChannelsLoade
       setLoading(true)
       setError(false)
       try {
-        const proxyUrl = `${(account.portal_url.endsWith('/') ? account.portal_url.slice(0, -1) : account.portal_url)}/player_api.php?username=${account.username}&password=${account.password}&action=get_live_streams&category_id=${category.category_id}`
-        const res = await fetch(proxyUrl)
-        if (res.ok) {
-          const data = await res.json()
-          if (Array.isArray(data)) {
+        const baseUrl = getBaseUrl(account.portal_url)
+        const url = `${baseUrl}/player_api.php?username=${account.username}&password=${account.password}&action=get_live_streams&category_id=${category.category_id}`
+        const data = await fetchIptv(url)
+        
+        if (Array.isArray(data)) {
             setChannels(data)
             onChannelsLoaded(category.category_id, data)
           } else {
             setError(true)
           }
-        } else {
-          setError(true)
-        }
       } catch (err) {
         console.error(`Error fetching live category ${category.category_id}:`, err)
         setError(true)

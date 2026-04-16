@@ -1,67 +1,110 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-/**
- * MIDDLEWARE (Estandarizado para Vercel)
- * 
- * Responsabilidad única: Controlar el acceso mediante sesión de Supabase.
- * - Si no hay sesión y se intenta acceder a una ruta protegida → redirige a "/" (Login).
- * - Si ya hay sesión y se intenta acceder a "/" → redirige al Catálogo.
- */
-export default async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+export async function proxy(request: NextRequest) {
+  // EXPORT_MODE Protection: Bypass middleware for Capacitor/Static builds
+  if (process.env.EXPORT_MODE === 'true') {
+    return NextResponse.next()
+  }
+
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
+        get(name: string) {
+          return request.cookies.get(name)?.value
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
         },
       },
     }
   )
 
+  // Refreshing the auth token
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  // Rutas protegidas
-  const isProtectedRoute =
+  // Protected paths
+  const isAppPath = 
     pathname.startsWith('/catalog') ||
-    pathname.startsWith('/player') ||
     pathname.startsWith('/live') ||
     pathname.startsWith('/series') ||
+    pathname.startsWith('/player') ||
     pathname.startsWith('/admin')
 
-  // Redirección por falta de sesión
-  if (!user && isProtectedRoute) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/'
-    return NextResponse.redirect(url)
+  // Not logged in -> Redirect to login
+  if (!user && isAppPath) {
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
-  // Redirección por sesión ya existente
+  // Already logged in at root -> Redirect to catalog (users) or admin (admins)
   if (user && pathname === '/') {
-    const url = request.nextUrl.clone()
-    url.pathname = '/catalog'
-    return NextResponse.redirect(url)
+    const role = user.user_metadata?.role
+    return NextResponse.redirect(new URL(role === 'admin' ? '/admin' : '/catalog', request.url))
   }
 
-  return supabaseResponse
+  // Admin route level protection
+  if (pathname.startsWith('/admin')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+    const role = user.user_metadata?.role
+    if (role !== 'admin') {
+      return NextResponse.redirect(new URL('/catalog', request.url))
+    }
+  }
+
+  return response
 }
 
 export const config = {
   matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public files
+     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

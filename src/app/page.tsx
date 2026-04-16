@@ -41,18 +41,30 @@ function LoginForm() {
     const supabase = createClient()
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: fakeEmail,
         password,
       })
 
       if (error) {
-        setErrorMsg('Credenciales inválidas. Comprueba tu usuario y contraseña.')
+        if (error.message.includes('Invalid login credentials')) {
+          setErrorMsg('Acceso denegado. Usuario o clave incorrectos.')
+        } else if (error.message.includes('Email not confirmed')) {
+          setErrorMsg('La cuenta no ha sido activada.')
+        } else {
+          setErrorMsg(error.message)
+        }
       } else {
-        router.push('/catalog')
+        // Redirección inteligente basada en Rol
+        const role = data.user?.user_metadata?.role
+        if (role === 'admin') {
+          router.push('/admin')
+        } else {
+          router.push('/catalog')
+        }
       }
     } catch (err: any) {
-      setErrorMsg('Error de red o conexión.')
+      setErrorMsg('Error de conexión con Rider TV. Reintenta en unos segundos.')
     } finally {
       setIsLoading(false)
     }
