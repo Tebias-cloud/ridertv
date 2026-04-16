@@ -210,57 +210,60 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
 
     const isHls = safeUrl.includes('.m3u8') || safeUrl.includes('.ts')
 
-    // Mute by default on iOS to allow autoplay, wait, better let user intent
-    if (isHls && Hls.isSupported()) {
-      hls = new Hls({
-        maxBufferSize: 0,
-        maxBufferLength: 30,
-        enableWorker: true,
-        lowLatencyMode: true,
-        liveSyncDurationCount: 3,
-        liveMaxLatencyDurationCount: 10,
-        manifestLoadingTimeOut: 10000,
-        fragLoadingTimeOut: 20000,
-      })
-      
-      let mediaRecovered = false;
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        console.warn('⚡ HLS Stream Event:', { type: data.type, details: data.details, fatal: data.fatal })
-        
-        if (data.fatal) {
-          if ((data.details === 'fragParsingError' || data.type === Hls.ErrorTypes.MEDIA_ERROR) && !mediaRecovered) {
-            console.log("♻️ HLS Media Error encontrado. Intentando recuperar...")
-            mediaRecovered = true;
-            hls.recoverMediaError()
-          } else {
-            console.error("❌ Fallo irrecuperable de códec o medio.")
-            setErrorMsg('Formato de canal no compatible con navegadores web (Códec de TV). Por favor, intenta con otro canal o disfruta de nuestro catálogo VOD.')
-            setHasFatalError(true)
-            hls.destroy()
-          }
-        }
-      })
-      
-      hls.loadSource(safeUrl)
-      hls.attachMedia(video)
-      
-      hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-        if (data.levels && data.levels.length > 0) {
-          const levels = data.levels.map((l: any, i: number) => ({ index: i, height: l.height, name: `${l.height}p` }))
-          setHlsLevels(levels)
-        }
-        playVideo()
-      })
-      hlsRef.current = hls
-    } else if (isHls && video.canPlayType('application/vnd.apple.mpegurl')) {
+    const playNative = () => {
       video.src = safeUrl
       video.addEventListener('loadedmetadata', () => {
         playVideo()
       }, { once: true })
-    } else if (!isHls) {
-      video.src = safeUrl
       video.load()
-      playVideo()
+    }
+
+    if (isHls) {
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        playNative()
+      } else if (Hls.isSupported()) {
+        hls = new Hls({
+          maxBufferSize: 0,
+          maxBufferLength: 30,
+          enableWorker: true,
+          lowLatencyMode: true,
+          liveSyncDurationCount: 3,
+          liveMaxLatencyDurationCount: 10,
+          manifestLoadingTimeOut: 10000,
+          fragLoadingTimeOut: 20000,
+        })
+        
+        let mediaRecovered = false;
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            if ((data.details === 'fragParsingError' || data.type === Hls.ErrorTypes.MEDIA_ERROR) && !mediaRecovered) {
+              mediaRecovered = true;
+              hls.recoverMediaError()
+            } else {
+              setErrorMsg('Error al cargar el stream. Posible bloqueo de red o fuente inactiva.')
+              setHasFatalError(true)
+              hls.destroy()
+            }
+          }
+        })
+        
+        hls.loadSource(safeUrl)
+        hls.attachMedia(video)
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+          if (data.levels && data.levels.length > 0) {
+            const levels = data.levels.map((l: any, i: number) => ({ index: i, height: l.height, name: `${l.height}p` }))
+            setHlsLevels(levels)
+          }
+          playVideo()
+        })
+        hlsRef.current = hls
+      } else {
+        // Fallback nativo
+        playNative()
+      }
+    } else {
+      playNative()
     }
 
     return () => {
