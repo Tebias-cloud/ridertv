@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect } from 'react'
-import SpatialNavigation from 'spatial-navigation-js'
 import { usePathname } from 'next/navigation'
 
 export function SpatialNavProvider({ children }: { children: React.ReactNode }) {
@@ -9,6 +8,7 @@ export function SpatialNavProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const SpatialNavigation = require('spatial-navigation-js')
       try {
         SpatialNavigation.init()
         SpatialNavigation.add({
@@ -24,10 +24,8 @@ export function SpatialNavProvider({ children }: { children: React.ReactNode }) 
       } catch (e) {
         console.warn('SpatialNavigation init error:', e)
       }
-    }
 
-    return () => {
-      if (typeof window !== 'undefined') {
+      return () => {
         try {
            SpatialNavigation.uninit()
         } catch (e) {}
@@ -39,6 +37,7 @@ export function SpatialNavProvider({ children }: { children: React.ReactNode }) 
     // Focus when pathname changes
     const timer = setTimeout(() => {
       if (typeof window !== 'undefined') {
+         const SpatialNavigation = require('spatial-navigation-js')
          try { SpatialNavigation.focus() } catch (e) {}
       }
     }, 800)

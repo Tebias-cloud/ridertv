@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { X, Play, Pause, Volume2, VolumeX, Maximize, MonitorX, Settings, AlertCircle, ExternalLink } from 'lucide-react'
 
 import { Capacitor } from '@capacitor/core'
-import { CapacitorVideoPlayer } from '@capgo/capacitor-video-player'
+import { VideoPlayer as CapacitorVideoPlayer } from '@capgo/capacitor-video-player'
 
 interface VideoPlayerProps {
   streamUrl: string
@@ -201,7 +201,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
           });
 
           // Escuchar cuando el usuario presiona "Back" o cierra el reproductor nativamente
-          CapacitorVideoPlayer.addListener('jeepCapVideoPlayerExit', () => {
+          ;(CapacitorVideoPlayer as any).addListener('jeepCapVideoPlayerExit', () => {
             if (isExiting) return;
             isExiting = true;
             // Despachar evento ESCAPE para que la UI de React cierre el modal contenedor
@@ -209,7 +209,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
           });
 
           // Escuchar cuando el video termina (especialmente util para VOD)
-          CapacitorVideoPlayer.addListener('jeepCapVideoPlayerEnded', () => {
+          ;(CapacitorVideoPlayer as any).addListener('jeepCapVideoPlayerEnded', () => {
             if (isExiting) return;
             isExiting = true;
             window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
@@ -225,7 +225,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
 
       return () => {
         isExiting = true;
-        CapacitorVideoPlayer.removeAllListeners().catch(() => {});
+        ;(CapacitorVideoPlayer as any).removeAllListeners?.().catch(() => {});
         CapacitorVideoPlayer.stopAllPlayers().catch(() => {});
       };
     }
@@ -233,13 +233,13 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     // ==========================================
     // INTEGRACIÓN WEB (HTML5 / HLS.js)
     // ==========================================
-    const video = videoRef.current
-    if (!video) return
+    const webVideo = videoRef.current
+    if (!webVideo) return
 
     let hls: Hls
 
     const playVideo = () => {
-      video.play().then(() => setIsPlaying(true)).catch(error => {
+      webVideo.play().then(() => setIsPlaying(true)).catch(error => {
         if (error.name === 'NotAllowedError' || (error.message && error.message.includes('interact'))) {
           setRequiresInteraction(true)
           setIsPlaying(false)
@@ -250,29 +250,29 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     }
 
     const handleVideoError = () => {
-      console.error('❌ Video Player Native Error:', video.error)
-      setErrorMsg(`Error nativo de reproducción. Código: ${video.error?.code || 'Desconocido'}`)
+      console.error('❌ Video Player Native Error:', webVideo.error)
+      setErrorMsg(`Error nativo de reproducción. Código: ${webVideo.error?.code || 'Desconocido'}`)
     }
-    video.addEventListener('error', handleVideoError)
+    webVideo.addEventListener('error', handleVideoError)
     
     // Sync React state with video native state
     const handlePlay = () => setIsPlaying(true)
     const handlePause = () => setIsPlaying(false)
-    video.addEventListener('play', handlePlay)
-    video.addEventListener('pause', handlePause)
+    webVideo.addEventListener('play', handlePlay)
+    webVideo.addEventListener('pause', handlePause)
 
     const isHls = safeUrl.includes('.m3u8') || safeUrl.includes('.ts')
 
     const playNativeUrl = () => {
-      video.src = safeUrl
-      video.addEventListener('loadedmetadata', () => {
+      webVideo.src = safeUrl
+      webVideo.addEventListener('loadedmetadata', () => {
         playVideo()
       }, { once: true })
-      video.load()
+      webVideo.load()
     }
 
     if (isHls) {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isIOS = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
 
       if (Hls.isSupported() && !isIOS) {
         // Prioridad total a HLS.js en Android/PC (El nativo suele fallar y arrojar Error 4 en TV WebViews si Capacitor falla o es navegador)
@@ -302,7 +302,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
         })
         
         hls.loadSource(safeUrl)
-        hls.attachMedia(video)
+        hls.attachMedia(webVideo)
         
         hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
           if (data.levels && data.levels.length > 0) {
@@ -312,7 +312,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
           playVideo()
         })
         hlsRef.current = hls
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      } else if (webVideo.canPlayType('application/vnd.apple.mpegurl')) {
         playNativeUrl()
       } else {
         playNativeUrl()
@@ -323,13 +323,13 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
 
     return () => {
       if (hls) hls.destroy()
-      if (video) {
-        video.removeEventListener('error', handleVideoError)
-        video.removeEventListener('play', handlePlay)
-        video.removeEventListener('pause', handlePause)
-        video.pause()
-        video.removeAttribute('src')
-        video.load()
+      if (webVideo) {
+        webVideo.removeEventListener('error', handleVideoError)
+        webVideo.removeEventListener('play', handlePlay)
+        webVideo.removeEventListener('pause', handlePause)
+        webVideo.pause()
+        webVideo.removeAttribute('src')
+        webVideo.load()
       }
     }
   }, [streamUrl])
