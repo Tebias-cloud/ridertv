@@ -8,11 +8,7 @@ async function getLiveCategories(account: any) {
   if (!account || account.status !== 'active') return []
   
   try {
-    // Usar el proxy interno para evitar bloqueos HTTP→HTTP en Vercel
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-    
-    const url = `${baseUrl}/api/iptv/proxy?username=${account.username}&password=${account.password}&portal_url=${encodeURIComponent(account.portal_url)}&action=get_live_categories`
+    const url = `${account.portal_url.replace(/\\/$/, '')}/player_api.php?username=${account.username}&password=${account.password}&action=get_live_categories`
     
     const res = await fetch(url, { 
       cache: 'no-store',

@@ -13,11 +13,8 @@ async function getCategoriesAndHero(account: any) {
   if (!account || account.status !== 'active') return { categories: [], heroStream: null }
   
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-    
-    // 1. Categorías via proxy
-    const catUrl = `${baseUrl}/api/iptv/proxy?username=${account.username}&password=${account.password}&portal_url=${encodeURIComponent(account.portal_url)}&action=get_vod_categories`
+    // 1. Categorías directas
+    const catUrl = `${account.portal_url.replace(/\\/$/, '')}/player_api.php?username=${account.username}&password=${account.password}&action=get_vod_categories`
     const catRes = await fetch(catUrl, { cache: 'no-store' })
     
     if (!catRes.ok) return { categories: [], heroStream: null }
@@ -40,7 +37,7 @@ async function getCategoriesAndHero(account: any) {
     }) || safeCategories[0]
 
     if (heroCat) {
-      const streamsUrl = `${baseUrl}/api/iptv/proxy?username=${account.username}&password=${account.password}&portal_url=${encodeURIComponent(account.portal_url)}&action=get_vod_streams&category_id=${heroCat.category_id}`
+      const streamsUrl = `${account.portal_url.replace(/\\/$/, '')}/player_api.php?username=${account.username}&password=${account.password}&action=get_vod_streams&category_id=${heroCat.category_id}`
       const streamsRes = await fetch(streamsUrl, { cache: 'no-store' })
       
       if (streamsRes.ok) {

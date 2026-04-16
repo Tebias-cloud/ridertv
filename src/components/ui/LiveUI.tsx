@@ -40,7 +40,7 @@ function LiveCategoryRow({ category, account, renderChannelCard, onChannelsLoade
       setLoading(true)
       setError(false)
       try {
-        const proxyUrl = `/api/iptv/proxy?username=${account.username}&password=${account.password}&portal_url=${encodeURIComponent(account.portal_url)}&action=get_live_streams&category_id=${category.category_id}`
+        const proxyUrl = `${account.portal_url.replace(/\\/$/, '')}/player_api.php?username=${account.username}&password=${account.password}&action=get_live_streams&category_id=${category.category_id}`
         const res = await fetch(proxyUrl)
         if (res.ok) {
           const data = await res.json()

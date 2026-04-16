@@ -63,19 +63,16 @@ export default function PlayerPage() {
     async function fetchData() {
       setLoading(true)
       try {
-        const queryParams = new URLSearchParams({
-          username: account!.username,
-          password: account!.password,
-          portal_url: account!.portal_url
-        })
-        
-        const streamsEndpoint = viewMode === 'live' ? '/api/iptv/channels' : '/api/iptv/vod-streams'
-        const categoriesEndpoint = viewMode === 'live' ? '/api/iptv/categories' : '/api/iptv/vod-categories'
+        const baseIpTvUrl = account!.portal_url.replace(/\\/$/, '')
+        const actionStreams = viewMode === 'live' ? 'get_live_streams' : 'get_vod_streams'
+        const actionCategories = viewMode === 'live' ? 'get_live_categories' : 'get_vod_categories'
+
+        const authQuery = `username=${account!.username}&password=${account!.password}`
 
         // Fetch paralelo de Categorias y Canales
         const [channelsRes, categoriesRes] = await Promise.all([
-          fetch(`${streamsEndpoint}?${queryParams.toString()}`),
-          fetch(`${categoriesEndpoint}?${queryParams.toString()}`)
+          fetch(`${baseIpTvUrl}/player_api.php?${authQuery}&action=${actionStreams}`),
+          fetch(`${baseIpTvUrl}/player_api.php?${authQuery}&action=${actionCategories}`)
         ])
 
         if (!channelsRes.ok || !categoriesRes.ok) {
