@@ -7,6 +7,7 @@ import { X, Play, Pause, Volume2, VolumeX, Maximize, MonitorX, Settings, AlertCi
 
 import { Capacitor } from '@capacitor/core'
 import { VideoPlayer as CapacitorVideoPlayer } from '@capgo/capacitor-video-player'
+import { App } from '@capacitor/app'
 
 interface VideoPlayerProps {
   streamUrl: string
@@ -192,6 +193,8 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     // ==========================================
     if (typeof window !== 'undefined' && Capacitor?.isNativePlatform() && !isLive) {
       let isExiting = false;
+      let backListener: any = null;
+
       const initNative = async () => {
         setLoadingNative(true);
         try {
@@ -211,6 +214,12 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
               window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
             });
           }
+
+          // Interceptar el botón atrás físico/control remoto para que no cierre la app
+          backListener = await App.addListener('backButton', () => {
+             console.log("Back button pressed, stopping native player...");
+             CapacitorVideoPlayer.stopAllPlayers().catch(() => {});
+          });
 
           await CapacitorVideoPlayer.initPlayer({
             mode: 'fullscreen',
@@ -246,6 +255,9 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
 
       return () => {
         isExiting = true;
+        if (backListener) {
+          backListener.remove();
+        }
         if ((CapacitorVideoPlayer as any).removeAllListeners) {
           ;(CapacitorVideoPlayer as any).removeAllListeners().catch(() => {});
         }
