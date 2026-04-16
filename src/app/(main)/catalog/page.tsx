@@ -14,7 +14,7 @@ async function getCategoriesAndHero(account: any) {
   
   try {
     // 1. Categorías directas
-    const catUrl = `${account.portal_url.replace(/\\/$/, '')}/player_api.php?username=${account.username}&password=${account.password}&action=get_vod_categories`
+    const catUrl = `${(account.portal_url.endsWith('/') ? account.portal_url.slice(0, -1) : account.portal_url)}/player_api.php?username=${account.username}&password=${account.password}&action=get_vod_categories`
     const catRes = await fetch(catUrl, { cache: 'no-store' })
     
     if (!catRes.ok) return { categories: [], heroStream: null }
@@ -37,7 +37,7 @@ async function getCategoriesAndHero(account: any) {
     }) || safeCategories[0]
 
     if (heroCat) {
-      const streamsUrl = `${account.portal_url.replace(/\\/$/, '')}/player_api.php?username=${account.username}&password=${account.password}&action=get_vod_streams&category_id=${heroCat.category_id}`
+      const streamsUrl = `${(account.portal_url.endsWith('/') ? account.portal_url.slice(0, -1) : account.portal_url)}/player_api.php?username=${account.username}&password=${account.password}&action=get_vod_streams&category_id=${heroCat.category_id}`
       const streamsRes = await fetch(streamsUrl, { cache: 'no-store' })
       
       if (streamsRes.ok) {

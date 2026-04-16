@@ -42,7 +42,7 @@ function SeriesCategoryRow({ category, account, renderSerieCard, onSeriesLoaded 
       setLoading(true)
       setError(false)
       try {
-        const proxyUrl = `${account.portal_url.replace(/\\/$/, '')}/player_api.php?username=${account.username}&password=${account.password}&action=get_series&category_id=${category.category_id}`
+        const proxyUrl = `${(account.portal_url.endsWith('/') ? account.portal_url.slice(0, -1) : account.portal_url)}/player_api.php?username=${account.username}&password=${account.password}&action=get_series&category_id=${category.category_id}`
         const res = await fetch(proxyUrl)
         if (res.ok) {
           const data = await res.json()
@@ -161,7 +161,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
       setLoadingInfo(true)
       setPlayingEpisode(null)
       try {
-        const proxyUrl = `${account.portal_url.replace(/\\/$/, '')}/player_api.php?username=${account.username}&password=${account.password}&action=get_series_info&series_id=${selectedSerie.series_id}`
+        const proxyUrl = `${(account.portal_url.endsWith('/') ? account.portal_url.slice(0, -1) : account.portal_url)}/player_api.php?username=${account.username}&password=${account.password}&action=get_series_info&series_id=${selectedSerie.series_id}`
         const res = await fetch(proxyUrl)
         if (res.ok) {
           const data = await res.json()

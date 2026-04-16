@@ -8,7 +8,7 @@ async function getLiveCategories(account: any) {
   if (!account || account.status !== 'active') return []
   
   try {
-    const url = `${account.portal_url.replace(/\\/$/, '')}/player_api.php?username=${account.username}&password=${account.password}&action=get_live_categories`
+    const url = `${(account.portal_url.endsWith('/') ? account.portal_url.slice(0, -1) : account.portal_url)}/player_api.php?username=${account.username}&password=${account.password}&action=get_live_categories`
     
     const res = await fetch(url, { 
       cache: 'no-store',

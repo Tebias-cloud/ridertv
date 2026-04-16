@@ -63,7 +63,7 @@ export default function PlayerPage() {
     async function fetchData() {
       setLoading(true)
       try {
-        const baseIpTvUrl = account!.portal_url.replace(/\\/$/, '')
+        const baseIpTvUrl = (account!.portal_url.endsWith('/') ? account!.portal_url.slice(0, -1) : account!.portal_url)
         const actionStreams = viewMode === 'live' ? 'get_live_streams' : 'get_vod_streams'
         const actionCategories = viewMode === 'live' ? 'get_live_categories' : 'get_vod_categories'
 
