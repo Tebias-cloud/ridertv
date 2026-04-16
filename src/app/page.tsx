@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect, Suspense } from 'react'
-import { loginAction } from '@/actions/auth'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 // WhatsApp funnel URL
 const WHATSAPP_URL = "https://wa.me/56961391859?text=Hola%20Rober,%20necesito%20ayuda%20con%20Rider%20TV"
@@ -22,21 +22,37 @@ function LoginForm() {
     }
   }, [errorParam])
 
+  const router = useRouter()
+
   async function handleAction(formData: FormData) {
     setIsLoading(true)
     setErrorMsg(null)
 
+    const username = formData.get('username') as string
+    const password = formData.get('password') as string
+    
+    if (!username || !password) {
+      setErrorMsg('Usuario y Contraseña son requeridos')
+      setIsLoading(false)
+      return
+    }
+
+    const fakeEmail = `${username.trim().toLowerCase()}@rider.com`
+    const supabase = createClient()
+
     try {
-      const response = await loginAction(formData)
-      if (response?.error) {
-        setErrorMsg(response.error)
+      const { error } = await supabase.auth.signInWithPassword({
+        email: fakeEmail,
+        password,
+      })
+
+      if (error) {
+        setErrorMsg('Credenciales inválidas. Comprueba tu usuario y contraseña.')
+      } else {
+        router.push('/catalog')
       }
     } catch (err: any) {
-      if (err.message !== 'NEXT_REDIRECT') {
-         setErrorMsg('Usuario o contraseña incorrectos.')
-      } else {
-        throw err;
-      }
+      setErrorMsg('Error de red o conexión.')
     } finally {
       setIsLoading(false)
     }

@@ -1,18 +1,18 @@
-'use server'
-
 import { createClient } from '@supabase/supabase-js'
-import { revalidatePath } from 'next/cache'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 // Inicializamos el cliente de administración con la Service Role Key 
-// Esto nos permite evadir RLS y usar el auth.admin
+// NOTA: Para que esto funcione 100% del lado del cliente en un build exportado (Capacitor),
+// es necesario que definas NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY en tu .env.local
 const getSupabaseAdmin = () => {
-  if (!supabaseServiceRoleKey) {
-    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY');
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const key = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY!
+  
+  if (!key) {
+    console.error('Falta la clave Service Role. Si estás en frontend puro, añade NEXT_PUBLIC_ a tu SUPABASE_SERVICE_ROLE_KEY en el .env');
+    throw new Error('Missing Supabase Admin Key');
   }
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+  
+  return createClient(url, key, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
@@ -32,14 +32,14 @@ export async function getAllProfilesAction() {
       
     if (profileErr) throw profileErr
 
-    // 2. Obtener todas las líneas IPTV (evitando el strict JOIN constraint de la DB)
+    // 2. Obtener todas las líneas IPTV
     const { data: externalData, error: extErr } = await supabaseAdmin
       .from('external_accounts')
       .select('user_id, username, password, portal_url')
 
     if (extErr) throw extErr
 
-    // 3. Fusión de datos en el servidor
+    // 3. Fusión de datos en el cliente
     const profiles = profilesData.map(prof => {
        const userExternals = externalData.filter(ext => ext.user_id === prof.id)
        return {
@@ -60,7 +60,6 @@ export async function createUserAction(formData: FormData) {
     const username = formData.get('username') as string
     const password = formData.get('password') as string
     
-    // Novedades Fase 2: Línea IPTV Externa
     const iptvUsername = formData.get('iptvUsername') as string
     const iptvPassword = formData.get('iptvPassword') as string
     const iptvPortalUrl = formData.get('iptvPortalUrl') as string
@@ -93,16 +92,13 @@ export async function createUserAction(formData: FormData) {
       .insert({
         id: newUserId,
         username: username.trim(),
-        role: 'user', // Asumiendo que existe una columna 'role'
+        role: 'user',
         is_active: true,
         expires_at: datePlus30Days.toISOString()
       })
 
-    // 6. Sistema de Rollback (CRÍTICO)
     if (profileError) {
-      // Rechazar y Limpiar base de datos para evitar usuarios fantasma
       await supabaseAdmin.auth.admin.deleteUser(newUserId)
-      
       const errMsg = `Database error creating new user: ${profileError.message || JSON.stringify(profileError)}`
       console.error(errMsg)
       return { error: errMsg }
@@ -121,7 +117,6 @@ export async function createUserAction(formData: FormData) {
       })
 
     if (iptvError) {
-       // Rollback Completo: Perfil y Auth
        await supabaseAdmin.from('profiles').delete().eq('id', newUserId)
        await supabaseAdmin.auth.admin.deleteUser(newUserId)
        
@@ -130,7 +125,6 @@ export async function createUserAction(formData: FormData) {
        return { error: errMsg }
     }
 
-    revalidatePath('/admin')
     return { success: true }
   } catch (err: any) {
     return { error: err.message || 'Error interno' }
@@ -146,8 +140,6 @@ export async function toggleUserAccessAction(userId: string, currentStatus: bool
       .eq('id', userId)
 
     if (error) throw error;
-
-    revalidatePath('/admin')
     return { success: true }
   } catch (err: any) {
     return { error: err.message || 'Error al modificar acceso' }
@@ -164,8 +156,6 @@ export async function updateUserExpiryAction(userId: string, newExpiresAtIso: st
       .eq('id', userId)
 
     if (error) throw error;
-
-    revalidatePath('/admin')
     return { success: true }
   } catch (err: any) {
     return { error: err.message || 'Error al modificar la fecha' }
@@ -181,7 +171,6 @@ export async function updateIPTVCredentialsAction(userId: string, usr: string, p
       .eq('user_id', userId)
     
     if (error) throw error;
-    revalidatePath('/admin')
     return { success: true }
   } catch (err: any) {
     return { error: err.message || 'Error al actualizar línea IPTV' }
@@ -204,8 +193,6 @@ export async function deleteUserAction(userId: string) {
   try {
     const supabaseAdmin = getSupabaseAdmin()
     
-    // Auth Delete. Supabase triggers usually delete the profile as well depending on setup,
-    // Pero para ser seguros podemos eliminar primero de profiles.
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .delete()
@@ -218,7 +205,6 @@ export async function deleteUserAction(userId: string) {
     const { error } = await supabaseAdmin.auth.admin.deleteUser(userId)
     if (error) throw error;
 
-    revalidatePath('/admin')
     return { success: true }
   } catch (err: any) {
     return { error: err.message || 'Error al eliminar usuario' }

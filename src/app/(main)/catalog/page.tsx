@@ -1,13 +1,14 @@
+"use client"
+
+import { useState, useEffect } from 'react'
 import { HeroBanner } from '@/components/ui/HeroBanner'
 import { MovieCard } from '@/components/ui/MovieCard'
 import { Logo } from '@/components/ui/Logo'
 import { IptvCard } from '@/components/ui/IptvCard'
 import { CatalogUI } from '@/components/ui/CatalogUI'
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-
-export const dynamic = 'force-dynamic'
 
 async function getCategoriesAndHero(account: any) {
   if (!account || account.status !== 'active') return { categories: [], heroStream: null }
@@ -58,23 +59,50 @@ async function getCategoriesAndHero(account: any) {
   }
 }
 
-export default async function CatalogPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default function CatalogPage() {
+  const router = useRouter()
+  const [state, setState] = useState<any>(null)
 
-  if (!user) {
-    redirect('/')
-  }
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: accounts } = await supabase
-    .from('external_accounts')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
+      if (!user) {
+        router.push('/')
+        return
+      }
 
-  const validAccounts = accounts || []
+      const { data: accounts } = await supabase
+        .from('external_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
 
-  if (validAccounts.length === 0) {
+      const validAccounts = accounts || []
+
+      if (validAccounts.length === 0) {
+        setState({ noAccounts: true })
+        return
+      }
+
+      const activeAccount = validAccounts.find((a: any) => a.status === 'active') || validAccounts[0]
+      const { categories, heroStream } = await getCategoriesAndHero(activeAccount)
+      
+      setState({
+        noAccounts: false,
+        validAccounts,
+        activeAccount,
+        categories,
+        heroStream
+      })
+    }
+    load()
+  }, [router])
+
+  if (!state) return <div className="min-h-screen bg-zinc-950" />
+
+  if (state.noAccounts) {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-8 text-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-zinc-950 w-full relative overflow-hidden">
          <div className="absolute top-0 w-full h-1/2 bg-gradient-to-b from-[var(--color-rider-blue)]/5 to-transparent blur-3xl pointer-events-none" />
@@ -100,11 +128,8 @@ export default async function CatalogPage() {
     )
   }
 
-  const activeAccount = validAccounts.find((a: any) => a.status === 'active') || validAccounts[0]
-  const { categories, heroStream } = await getCategoriesAndHero(activeAccount)
-
   return (
-    <div className="relative text-white overflow-hidden pb-32">
+    <div className="relative text-white overflow-hidden pb-32 min-h-screen">
       <header className="fixed top-0 w-full z-50 bg-gradient-to-b from-zinc-950 via-zinc-950/80 to-transparent pt-6 pb-12 px-4 sm:px-8 pointer-events-none">
         <div className="pointer-events-auto">
           <div className="md:hidden">
@@ -113,7 +138,12 @@ export default async function CatalogPage() {
         </div>
       </header>
       
-      <CatalogUI categories={categories} heroMovie={heroStream} validAccounts={validAccounts} activeAccount={activeAccount} />
+      <CatalogUI 
+        categories={state.categories} 
+        heroMovie={state.heroStream} 
+        validAccounts={state.validAccounts} 
+        activeAccount={state.activeAccount} 
+      />
     </div>
   )
 }

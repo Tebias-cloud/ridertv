@@ -1,8 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import { LiveUI } from '@/components/ui/LiveUI'
+"use client"
 
-export const dynamic = 'force-dynamic'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import { LiveUI } from '@/components/ui/LiveUI'
 
 async function getLiveCategories(account: any) {
   if (!account || account.status !== 'active') return []
@@ -33,22 +34,43 @@ async function getLiveCategories(account: any) {
   }
 }
 
-export default async function LivePage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default function LivePage() {
+  const router = useRouter()
+  const [state, setState] = useState<any>(null)
 
-  if (!user) redirect('/')
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: accounts } = await supabase
-    .from('external_accounts')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
+      if (!user) {
+        router.push('/')
+        return
+      }
 
-  const validAccounts = accounts || []
-  const activeAccount = validAccounts.find((a: any) => a.status === 'active') || validAccounts[0]
+      const { data: accounts } = await supabase
+        .from('external_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
 
-  if (!activeAccount) {
+      const validAccounts = accounts || []
+      const activeAccount = validAccounts.find((a: any) => a.status === 'active') || validAccounts[0]
+
+      if (!activeAccount) {
+        setState({ noAccounts: true })
+        return
+      }
+
+      const categories = await getLiveCategories(activeAccount)
+      setState({ noAccounts: false, activeAccount, categories })
+    }
+    load()
+  }, [router])
+
+  if (!state) return <div className="min-h-screen bg-black" />
+
+  if (state.noAccounts) {
     return (
        <div className="relative w-full h-[60vh] flex flex-col items-center justify-center">
          <p className="text-zinc-500 font-medium">No se detectó un Pase Digital activo para Live TV.</p>
@@ -56,11 +78,9 @@ export default async function LivePage() {
     )
   }
 
-  const categories = await getLiveCategories(activeAccount)
-
   return (
     <div className="relative text-white overflow-hidden min-h-screen">
-      <LiveUI categories={categories} account={activeAccount} />
+      <LiveUI categories={state.categories} account={state.activeAccount} />
     </div>
   )
 }

@@ -1,31 +1,49 @@
+"use client"
+
+import { useState, useEffect } from 'react'
 import { getAllProfilesAction } from '@/actions/admin'
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 import AdminClientPanel from './AdminClientPanel'
 
-export default async function AdminPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/')
+export default function AdminPage() {
+  const router = useRouter()
+  const [data, setData] = useState<{ user: any, profiles: any[] } | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  const { createClient: createSupabaseClient } = require('@supabase/supabase-js')
-  const supabaseAdmin = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } }
-  )
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/')
+        return
+      }
 
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
 
-  if (profile?.role !== 'admin') {
-    redirect('/catalog')
+      if (profile?.role !== 'admin') {
+        router.push('/catalog')
+        return
+      }
+
+      const res = await getAllProfilesAction()
+      if (res.error) {
+        setErrorMsg(res.error)
+      } else {
+        setData({ user, profiles: res.profiles || [] })
+      }
+    }
+    load()
+  }, [router])
+
+  if (!data && !errorMsg) {
+    return <div className="p-8 text-white opacity-50">Autenticando panel maestro...</div>
   }
-
-  const { profiles, error } = await getAllProfilesAction()
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -38,12 +56,12 @@ export default async function AdminPage() {
         </div>
       </div>
       
-      {error ? (
+      {errorMsg ? (
         <div className="bg-red-500/20 text-red-500 p-4 rounded-xl border border-red-500/50">
-           Error cargando perfiles: {error}
+           Error cargando perfiles: {errorMsg}
         </div>
       ) : (
-        <AdminClientPanel initialProfiles={profiles || []} currentUserId={user.id} />
+        <AdminClientPanel initialProfiles={data!.profiles} currentUserId={data!.user.id} />
       )}
     </div>
   )
