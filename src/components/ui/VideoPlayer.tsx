@@ -219,9 +219,10 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     }
 
     if (isHls) {
-      if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        playNative()
-      } else if (Hls.isSupported()) {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      if (Hls.isSupported() && !isIOS) {
+        // Prioridad total a HLS.js en Android/PC (El nativo suele fallar y arrojar Error 4 en TV WebViews)
         hls = new Hls({
           maxBufferSize: 0,
           maxBufferLength: 30,
@@ -258,8 +259,11 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
           playVideo()
         })
         hlsRef.current = hls
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Fallback Nativo o exclusividad iOS Safari
+        playNative()
       } else {
-        // Fallback nativo
+        // Extremo fallback
         playNative()
       }
     } else {

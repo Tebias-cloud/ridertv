@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   description: "Plataforma de streaming ultra-rápida",
 };
 
+import { SpatialNavProvider } from '@/components/layout/SpatialNavProvider'
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -23,7 +25,11 @@ export default function RootLayout({
       className={`${inter.variable} h-full antialiased dark`}
     >
       <head />
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <SpatialNavProvider>
+          {children}
+        </SpatialNavProvider>
+      </body>
     </html>
   );
 }

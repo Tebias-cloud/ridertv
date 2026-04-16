@@ -8,6 +8,10 @@ const config: CapacitorConfig = {
     CapacitorHttp: {
       enabled: true
     }
+  },
+  server: {
+    androidScheme: 'http',
+    cleartext: true
   }
 };
 
