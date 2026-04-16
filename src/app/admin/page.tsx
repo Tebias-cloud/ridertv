@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { getAllProfilesAction } from '@/actions/admin'
+import { getAllProfilesAction, getUserRoleAction } from '@/actions/admin'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import AdminClientPanel from './AdminClientPanel'
@@ -20,13 +20,8 @@ export default function AdminPage() {
         return
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-      if (profile?.role !== 'admin') {
+      const role = user.user_metadata?.role
+      if (role !== 'admin') {
         router.push('/catalog')
         return
       }

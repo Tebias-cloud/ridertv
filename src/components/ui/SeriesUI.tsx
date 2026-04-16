@@ -82,7 +82,7 @@ function SeriesCategoryRow({ category, account, renderSerieCard, onSeriesLoaded 
         <div className="flex gap-4 sm:gap-6 overflow-x-auto hide-scrollbar pt-4 pb-6 mx-[-1rem] px-[1rem] sm:mx-0 sm:px-0">
           {loading ? (
              [...Array(6)].map((_, j) => (
-                <div key={`skel-series-${category.category_id}-${j}`} className="shrink-0 w-36 sm:w-48 xl:w-56 aspect-[2/3] bg-zinc-900/50 rounded-2xl animate-pulse"></div>
+                <div key={`skel-series-${category.category_id}-${j}`} className="aspect-[2/3] bg-zinc-900/50 rounded-2xl animate-pulse"></div>
              ))
           ) : error ? (
              <div className="flex items-center gap-3 py-8 px-6 bg-zinc-900/40 rounded-2xl border border-zinc-800 text-zinc-500">
@@ -130,8 +130,12 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'Backspace') {
-        setSelectedSerie(null)
-        setPlayingEpisode(null)
+        if (selectedSerie || playingEpisode) {
+          e.preventDefault()
+          e.stopPropagation()
+          setSelectedSerie(null)
+          setPlayingEpisode(null)
+        }
       }
     }
     window.addEventListener('keydown', handleGlobalKeyDown)
@@ -205,7 +209,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
         onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.click() }}
         role="button"
         tabIndex={0}
-        className="nav-item relative rounded-[1.5rem] shrink-0 w-36 sm:w-48 xl:w-56 overflow-hidden transition-transform duration-300 ease-out transform-gpu will-change-transform text-left group border border-transparent hover:border-rose-500/50 hover:shadow-[0_0_40px_rgba(244,63,94,0.2)] aspect-[2/3] hover:-translate-y-2 bg-zinc-900 cursor-pointer focus:outline-none focus:ring-[6px] focus:ring-white focus:scale-[1.05] focus:z-50 focus:-translate-y-2"
+        className="nav-item relative rounded-[1.5rem] shrink-0 w-36 sm:w-48 aspect-[2/3] overflow-hidden transition-all duration-200 ease-out transform-gpu will-change-transform text-left group border border-transparent hover:border-rose-500/50 hover:shadow-[0_0_40px_rgba(244,63,94,0.2)] bg-zinc-900 cursor-pointer focus:outline-none focus:scale-[1.08] focus:z-50 focus:shadow-[0_0_25px_var(--color-rider-red)]"
      >
         <button 
           onClick={(e) => { e.stopPropagation(); toggleFavorite({ id: ser.series_id, type: 'series', data: ser }); }}
@@ -216,7 +220,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
         </button>
 
         {ser.cover ? (
-          <img src={ser.cover} alt={ser.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onError={(e) => e.currentTarget.style.display = 'none'} />
+          <img src={ser.cover} alt={ser.name} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onError={(e) => e.currentTarget.style.display = 'none'} />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-700 bg-zinc-950 p-4">
              <TvMinimal className="w-12 h-12 mb-2 opacity-50" />
@@ -229,7 +233,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
            <Play className="w-12 h-12 text-white ml-1 filter drop-shadow-lg scale-75 group-hover:scale-100 transition-transform duration-500" fill="currentColor" />
         </div>
         <div className="absolute bottom-0 w-full p-4">
-          <h4 className="text-sm font-bold text-white leading-snug line-clamp-2 drop-shadow-md">{ser.name}</h4>
+          <h4 className="text-[11px] font-bold text-white leading-snug truncate drop-shadow-md">{ser.name}</h4>
           {ser.rating && ser.rating !== "0" ? (
             <span className="text-[10px] bg-rose-600 text-white font-bold px-2 py-0.5 rounded-md mt-2 inline-block">⭐ {ser.rating}</span>
           ) : null}
@@ -273,7 +277,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
              <h3 className="text-xl font-bold text-zinc-500">Resultados para: <span className="text-white">{searchQuery}</span></h3>
           </div>
           {searchResults.length > 0 ? (
-             <div className="flex flex-wrap gap-4 sm:gap-6">
+             <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-4 sm:gap-6">
                 {searchResults.map(ser => renderSerieCard(ser))}
              </div>
           ) : (
@@ -291,13 +295,13 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
                {isLoaded && favorites.length > 0 && (
                  <VirtualRow>
                    <div className="pl-4 sm:pl-8 mb-12">
-                     <h3 className="text-xl sm:text-2xl font-black text-rose-500 mb-4 sm:mb-6 tracking-tight drop-shadow-md flex items-center gap-3">
-                       <Heart className="w-6 h-6 fill-current" />
-                       Tus Favoritos
-                     </h3>
-                     <div className="flex gap-4 sm:gap-6 overflow-x-auto hide-scrollbar pt-4 pb-6 mx-[-1rem] px-[1rem] sm:mx-0 sm:px-0">
-                       {favorites.map((fav) => renderSerieCard(fav.data))}
-                     </div>
+                      <h3 className="text-xl sm:text-2xl font-black text-rose-500 mb-4 sm:mb-6 tracking-tight drop-shadow-md flex items-center gap-3">
+                        <Heart className="w-6 h-6 fill-current" />
+                        Tus Favoritos
+                      </h3>
+                      <div className="flex gap-4 sm:gap-6 overflow-x-auto hide-scrollbar pt-4 pb-6 mx-[-1rem] px-[1rem] sm:mx-0 sm:px-0">
+                        {favorites.map((fav) => renderSerieCard(fav.data))}
+                      </div>
                    </div>
                  </VirtualRow>
                )}

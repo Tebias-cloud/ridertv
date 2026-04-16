@@ -76,7 +76,7 @@ function LiveCategoryRow({ category, account, renderChannelCard, onChannelsLoade
         <div className="flex gap-4 sm:gap-6 overflow-x-auto hide-scrollbar pt-4 pb-6 mx-[-1rem] px-[1rem] sm:mx-0 sm:px-0">
           {loading ? (
              [...Array(5)].map((_, j) => (
-                <div key={`skel-live-${category.category_id}-${j}`} className="shrink-0 w-44 sm:w-60 aspect-[4/3] sm:aspect-video bg-zinc-900/50 rounded-xl animate-pulse border border-white/5"></div>
+                <div key={`skel-live-${category.category_id}-${j}`} className="aspect-video bg-zinc-900/50 rounded-xl animate-pulse border border-white/5"></div>
              ))
           ) : error ? (
              <div className="flex items-center gap-3 py-6 px-6 bg-zinc-900/40 rounded-xl border border-zinc-800 text-zinc-500">
@@ -118,7 +118,11 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'Backspace') {
-        setSelectedChannel(null)
+        if (selectedChannel) {
+          e.preventDefault()
+          e.stopPropagation()
+          setSelectedChannel(null)
+        }
       }
     }
     window.addEventListener('keydown', handleGlobalKeyDown)
@@ -176,7 +180,7 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
        onKeyDown={(e) => { if(e.key === 'Enter') e.currentTarget.click() }}
        role="button"
        tabIndex={0}
-       className={`nav-item relative rounded-xl overflow-hidden shrink-0 w-44 sm:w-60 aspect-[4/3] sm:aspect-video transition-all duration-300 ease-out transform-gpu will-change-transform text-left group bg-zinc-900/60 backdrop-blur-sm border border-white/5 shadow-md hover:shadow-2xl hover:border-red-500 hover:bg-zinc-800 hover:-translate-y-2 focus:outline-none focus:ring-4 focus:ring-red-500 cursor-pointer focus:-translate-y-2 flex flex-col`}
+       className={`nav-item relative rounded-xl overflow-hidden shrink-0 w-44 sm:w-60 aspect-video transition-all duration-200 ease-out transform-gpu will-change-transform text-left group bg-zinc-900/60 backdrop-blur-sm border border-white/5 shadow-md hover:shadow-2xl hover:border-red-500 bg-zinc-800 cursor-pointer focus:outline-none focus:scale-[1.08] focus:z-50 focus:shadow-[0_0_20px_rgba(239,68,68,0.5)] flex flex-col`}
     >
        <button 
           onClick={(e) => { e.stopPropagation(); toggleFavorite({ id: chan.stream_id, type: 'live', data: chan }); }}
@@ -190,8 +194,8 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
 
        <div className="flex-1 w-full bg-black/40 relative group-hover:bg-black/20 transition-colors overflow-hidden">
          <div className="absolute inset-0 p-4 flex items-center justify-center">
-           {chan.stream_icon ? (
-             <img src={chan.stream_icon} alt={chan.name} onError={(e) => e.currentTarget.style.display = 'none'} className="w-full h-full object-contain drop-shadow-xl group-hover:scale-110 transition-transform duration-500" />
+            {chan.stream_icon ? (
+              <img src={chan.stream_icon} alt={chan.name} loading="lazy" onError={(e) => e.currentTarget.style.display = 'none'} className="w-full h-full object-contain drop-shadow-xl group-hover:scale-110 transition-transform duration-500" />
            ) : (
              <Tv className="w-12 h-12 text-zinc-600 group-hover:scale-110 transition-transform duration-500" />
            )}
@@ -199,7 +203,7 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
        </div>
        
        <div className="h-10 sm:h-12 w-full bg-zinc-950/80 px-3 flex items-center justify-center border-t border-white/5">
-          <span className="text-xs sm:text-[13px] font-bold w-full truncate text-center text-zinc-300 group-hover:text-white transition-colors">
+          <span className="text-[10px] font-bold w-full truncate text-center text-zinc-300 group-hover:text-white transition-colors">
             {chan.name}
           </span>
        </div>
@@ -243,7 +247,7 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
              <h3 className="text-xl font-bold text-zinc-500">Resultados para: <span className="text-white">{searchQuery}</span></h3>
           </div>
           {searchResults.length > 0 ? (
-             <div className="flex flex-wrap gap-4 sm:gap-6 pt-4 pb-8">
+             <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-4 sm:gap-6 pt-4 pb-8">
                 {searchResults.map(chan => renderChannelCard(chan))}
              </div>
           ) : (
@@ -261,13 +265,13 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
                {isLoaded && favorites.length > 0 && (
                  <VirtualRow>
                    <div className="pl-4 sm:pl-8 mb-12">
-                     <h3 className="text-xl sm:text-2xl font-black text-rose-500 mb-4 sm:mb-6 tracking-tight drop-shadow-md flex items-center gap-3">
-                       <Heart className="w-6 h-6 fill-current" />
-                       Tus Favoritos
-                     </h3>
-                     <div className="flex gap-4 sm:gap-6 overflow-x-auto hide-scrollbar pb-8 pt-6 pr-4 sm:pr-8 mx-[-1rem] px-[1rem] sm:mx-0 sm:px-0">
-                       {favorites.map((fav) => renderChannelCard(fav.data))}
-                     </div>
+                      <h3 className="text-xl sm:text-2xl font-black text-rose-500 mb-4 sm:mb-6 tracking-tight drop-shadow-md flex items-center gap-3">
+                        <Heart className="w-6 h-6 fill-current" />
+                        Tus Favoritos
+                      </h3>
+                      <div className="flex gap-4 sm:gap-6 overflow-x-auto hide-scrollbar pb-8 pt-6 pr-4 sm:pr-8 mx-[-1rem] px-[1rem] sm:mx-0 sm:px-0">
+                        {favorites.map((fav) => renderChannelCard(fav.data))}
+                      </div>
                    </div>
                  </VirtualRow>
                )}

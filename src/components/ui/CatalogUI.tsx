@@ -22,6 +22,7 @@ function CategoryRow({ category, activeAccount, renderMovieCard, onMoviesLoaded 
   const [error, setError] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
   const rowRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   // Intersection Observer to trigger fetch only when visible
   useEffect(() => {
@@ -78,10 +79,13 @@ function CategoryRow({ category, activeAccount, renderMovieCard, onMoviesLoaded 
           {category.category_name}
         </h3>
 
-        <div className="flex gap-4 sm:gap-6 overflow-x-auto hide-scrollbar pt-4 pb-6 mx-[-1rem] px-[1rem] sm:mx-0 sm:px-0 scroll-smooth">
+        <div 
+          ref={scrollRef}
+          className="flex gap-4 sm:gap-6 overflow-x-auto hide-scrollbar pt-4 pb-6 mx-[-1rem] px-[1rem] sm:mx-0 sm:px-0 scroll-smooth"
+        >
           {loading ? (
             [...Array(6)].map((_, j) => (
-              <div key={`skel-${category.category_id}-${j}`} className="shrink-0 w-36 sm:w-48 xl:w-56 aspect-[2/3] bg-zinc-900/50 rounded-2xl animate-pulse"></div>
+              <div key={`skel-${category.category_id}-${j}`} className="shrink-0 w-36 sm:w-48 aspect-[2/3] bg-zinc-900/50 rounded-2xl animate-pulse"></div>
             ))
           ) : error ? (
             <div className="flex items-center gap-3 py-10 px-6 bg-zinc-900/40 rounded-2xl border border-zinc-800 text-zinc-500">
@@ -106,6 +110,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [moviesByCategoryId, setMoviesByCategoryId] = useState<Record<string, any[]>>({})
   const [loadingSearch, setLoadingSearch] = useState(false)
+  const playBtnRef = useRef<HTMLButtonElement>(null)
 
   // Debounce search to avoid expensive re-renders on D-Pad typing
   const updateSearch = useMemo(() => debounce((q: string) => setDebouncedSearch(q), 400), [])
@@ -127,8 +132,12 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'Backspace') {
-        setSelectedMovie(null)
-        setPlayingMovie(null)
+        if (selectedMovie || playingMovie) {
+          e.preventDefault()
+          e.stopPropagation()
+          setSelectedMovie(null)
+          setPlayingMovie(null)
+        }
       }
     }
     window.addEventListener('keydown', handleGlobalKeyDown)
@@ -218,6 +227,13 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
     fetchDeepInfo()
   }, [selectedMovie, activeAccount])
 
+  // Auto-focus play button
+  useEffect(() => {
+    if (selectedMovie && !playingMovie) {
+      setTimeout(() => playBtnRef.current?.focus(), 150)
+    }
+  }, [selectedMovie, playingMovie])
+
    // ==========================
   // RENDER HELPERS
   // ==========================
@@ -228,7 +244,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
       onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.click() }}
       role="button"
       tabIndex={0}
-      className="nav-item relative rounded-2xl overflow-hidden shrink-0 w-36 sm:w-48 xl:w-56 aspect-[2/3] transition-transform duration-300 ease-out transform-gpu will-change-transform text-left group bg-zinc-950 border border-transparent hover:border-white/20 focus:outline-none focus:ring-[6px] focus:ring-white focus:scale-[1.05] focus:z-50 focus:border-white hover:-translate-y-2 cursor-pointer"
+      className="nav-item relative rounded-2xl overflow-hidden shrink-0 w-36 sm:w-48 aspect-[2/3] transition-all duration-200 ease-out transform-gpu will-change-transform text-left group bg-zinc-950 border border-transparent hover:border-[var(--color-rider-blue)]/50 focus:outline-none focus:scale-[1.08] focus:z-50 focus:shadow-[0_0_25px_var(--color-rider-blue)] cursor-pointer"
     >
       <button
         onClick={(e) => { e.stopPropagation(); toggleFavorite({ id: mov.stream_id, type: 'movie', data: mov }); }}
@@ -241,14 +257,14 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
       </button>
 
       {mov.stream_icon ? (
-        <img src={mov.stream_icon} alt={mov.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90" onError={(e) => { e.currentTarget.src = ''; e.currentTarget.className = "hidden" }} />
+        <img src={mov.stream_icon} alt={mov.name} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90" onError={(e) => { e.currentTarget.src = ''; e.currentTarget.className = "hidden" }} />
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-700 p-4"><Video className="w-10 h-10 mb-2 opacity-50" /><span className="text-xs text-center font-bold tracking-tight px-2">{mov.name}</span></div>
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-4">
         <Play className="w-10 h-10 text-[var(--color-rider-blue)] filter drop-shadow-[0_0_10px_rgba(37,99,235,0.8)] scale-75 group-hover:scale-100 transition-transform duration-500 mb-3" fill="currentColor" />
-        <span className="text-white text-xs font-bold text-center line-clamp-3">{mov.name}</span>
+        <span className="text-white text-[10px] font-bold text-center truncate w-full px-2">{mov.name}</span>
       </div>
       {(mov.rating && mov.rating !== "0" && mov.rating !== "0.0") && (
         <span className="absolute top-2 right-2 text-[10px] bg-yellow-500/90 text-black font-black px-1.5 py-0.5 rounded shadow shadow-black/50 backdrop-blur-md z-20">
@@ -310,7 +326,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
             </h3>
           </div>
           {searchResults.length > 0 ? (
-            <div className="flex flex-wrap gap-4 sm:gap-6">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-4 sm:gap-6">
               {searchResults.map(mov => renderMovieCard(mov))}
             </div>
           ) : (
@@ -466,6 +482,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
                       {movieInfo?.cast && <p className="line-clamp-1"><span className="text-zinc-500 font-bold">Elenco:</span> <span className="text-white">{movieInfo.cast}</span></p>}
                     </div>
                     <button
+                      ref={playBtnRef}
                       onClick={() => setPlayingMovie(selectedMovie)}
                       onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.click() }}
                       tabIndex={0}

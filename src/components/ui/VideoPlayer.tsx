@@ -176,11 +176,9 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     const video = videoRef.current
     if (!video || !streamUrl) return
     
-    // 🔥 Intercepción Crítica: Forzar HTTPS y quitar puerto 8080 para evitar Mixed Content
+    // 🔥 Estabilidad: Usar la URL original (normalmente http con puerto 8080)
+    // El motor nativo ya permite cleartext traffic y el servidor de Rober lo requiere.
     let safeUrl = streamUrl;
-    if (safeUrl.startsWith('http://')) {
-      safeUrl = safeUrl.replace('http://', 'https://').replace(':8080', '');
-    }
 
     console.log("🔗 URL del stream solicitada:", safeUrl)
     setErrorMsg(null)
@@ -230,7 +228,8 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
             volume: 1.0,      // Forzar volumen al máximo
             isMuted: false,   // Asegurar que no inicie silenciado
             headers: {
-              'User-Agent': 'IPTVSmarters/1.0' // El servidor IPTV requiere un UA conocido para liberar el stream
+              'User-Agent': 'IPTVSmarters/1.0', // El servidor IPTV requiere un UA conocido
+              'Referer': safeUrl.split('/').slice(0, 3).join('/') // Referer base del dominio
             }
           } as any);
 

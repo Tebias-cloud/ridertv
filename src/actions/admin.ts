@@ -20,6 +20,23 @@ const getSupabaseAdmin = () => {
   });
 };
 
+export async function getUserRoleAction(userId: string) {
+  try {
+    const supabaseAdmin = getSupabaseAdmin()
+    const { data: profile, error } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single()
+    
+    if (error) throw error
+    return { role: profile?.role || 'user' }
+  } catch (err: any) {
+    console.error('Error fetching user role:', err)
+    return { error: err.message }
+  }
+}
+
 export async function getAllProfilesAction() {
   try {
     const supabaseAdmin = getSupabaseAdmin()

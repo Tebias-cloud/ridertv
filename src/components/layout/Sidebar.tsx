@@ -2,20 +2,32 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import React, { useState, useEffect } from 'react'
-import { Home, Tv, Film, Clapperboard, User, LogOut } from 'lucide-react'
+import { Home, Tv, Film, Clapperboard, User, LogOut, ShieldCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getUserRoleAction } from '@/actions/admin'
 
 export const Sidebar = React.memo(function Sidebar({ account }: { account?: any }) {
   const pathname = usePathname()
   const [isAccountModalOpen, setAccountModalOpen] = useState(false)
   const [localUser, setLocalUser] = useState<string>('Usuario')
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [isNative, setIsNative] = useState(true) // assume native until confirmed
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (data.user?.email) {
         setLocalUser(data.user.email.replace('@rider.com', ''))
+        
+        // Role check via Auth Metadata (fast & static-compatible)
+        const role = data.user.user_metadata?.role
+        if (role === 'admin') setIsAdmin(true)
       }
+    })
+
+    // Check platform
+    import('@capacitor/core').then(m => {
+      setIsNative(m.Capacitor.isNativePlatform())
     })
   }, [])
 
@@ -25,6 +37,11 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
     { name: 'Películas (VOD)', href: '/catalog', icon: Film },
     { name: 'Series', href: '/series', icon: Clapperboard },
   ]
+
+  // Add Admin if web and authorized
+  if (isAdmin && !isNative) {
+    links.push({ name: 'Admin Panel', href: '/admin', icon: ShieldCheck })
+  }
 
   // Convert TIMESTAMP to Date safely
   let accountExpDate = 'No disponible'

@@ -70,7 +70,7 @@ function LoginForm() {
             Rider TV
           </h1>
           <p className="mt-4 text-center text-xl text-zinc-400 font-medium tracking-wide">
-            Streaming sin límites
+            Streaming sin límites (Solo Usuario y Clave)
           </p>
         </div>
 
@@ -85,7 +85,7 @@ function LoginForm() {
                 autoComplete="username"
                 required
                 className="block w-full px-5 py-5 border border-slate-800 bg-slate-900/80 backdrop-blur-sm placeholder-zinc-500 text-zinc-100 rounded-xl text-xl sm:text-2xl focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500 transition-colors duration-200 shadow-xl"
-                placeholder="Usuario"
+                placeholder="Nombre de Usuario"
               />
             </div>
             
