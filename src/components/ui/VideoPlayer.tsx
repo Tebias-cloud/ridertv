@@ -195,15 +195,10 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
       const initNative = async () => {
         setLoadingNative(true);
         try {
-          await CapacitorVideoPlayer.initPlayer({
-            mode: 'fullscreen',
-            url: safeUrl,
-            playerId: 'rider-fullscreen',
-            componentTag: 'capacitor-video-player'
-          });
-
-          // Escuchar cuando el usuario presiona "Back" o cierra el reproductor nativamente
+          // Escuchar eventos ANTES de inicializar para evitar pérdida de señal o errores de timing
           if ((CapacitorVideoPlayer as any).addListener) {
+            ;(CapacitorVideoPlayer as any).removeAllListeners?.().catch(() => {});
+            
             ;(CapacitorVideoPlayer as any).addListener('jeepCapVideoPlayerExit', () => {
               if (isExiting) return;
               isExiting = true;
@@ -216,6 +211,14 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
               window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
             });
           }
+
+          await CapacitorVideoPlayer.initPlayer({
+            mode: 'fullscreen',
+            url: safeUrl,
+            playerId: 'rider-fullscreen',
+            componentTag: 'capacitor-video-player',
+            chromecast: false // Desactivar para evitar crash de CastContext en Android TV
+          });
           
           setLoadingNative(false);
         } catch (err) {
