@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, memo, useCallback } from 'react'
+import debounce from 'lodash/debounce'
 import { HeroBanner } from '@/components/ui/HeroBanner'
 import { Search, Flame, Clock, Play, X, Compass, CheckCircle2, ChevronRight, Video, Heart } from 'lucide-react'
 import { VideoPlayer } from '@/components/ui/VideoPlayer'
@@ -96,12 +97,27 @@ function CategoryRow({ category, activeAccount, renderMovieCard, onMoviesLoaded 
   )
 }
 
+const MemoizedCategoryRow = memo(CategoryRow);
+
 export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount }: { categories: any[], heroMovie: any, validAccounts: any[], activeAccount: any }) {
   const { favorites, isLoaded, toggleFavorite, isFavorite } = useFavorites('movie')
 
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [moviesByCategoryId, setMoviesByCategoryId] = useState<Record<string, any[]>>({})
   const [loadingSearch, setLoadingSearch] = useState(false)
+
+  // Debounce search to avoid expensive re-renders on D-Pad typing
+  const updateSearch = useMemo(() => debounce((q: string) => setDebouncedSearch(q), 400), [])
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val)
+    updateSearch(val)
+  }
+
+  useEffect(() => {
+    return () => updateSearch.cancel()
+  }, [updateSearch])
 
   // Nivel 3 (Inmersivo)
   const [selectedMovie, setSelectedMovie] = useState<any | null>(null)
@@ -125,9 +141,9 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
   // 2. BUSCADOR DINÁMICO (Basado en lo cargado)
   // ==========================
   const searchResults = useMemo(() => {
-    if (!searchQuery) return []
+    if (!debouncedSearch) return []
     const allMovies = Object.values(moviesByCategoryId).flat()
-    const query = searchQuery.toLowerCase()
+    const query = debouncedSearch.toLowerCase()
 
     const bypassAdultBlock = bannedKeywords.some(kw => query.includes(kw))
 
@@ -144,7 +160,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
     })
 
     return matches.slice(0, 50)
-  }, [moviesByCategoryId, searchQuery])
+  }, [moviesByCategoryId, debouncedSearch])
 
   // ==========================
   // 3. GENERADOR DE CARRUSELES DINAMICOS (Lazy Loading + SFW Filter)
@@ -202,10 +218,10 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
     fetchDeepInfo()
   }, [selectedMovie, activeAccount])
 
-  // ==========================
+   // ==========================
   // RENDER HELPERS
   // ==========================
-  const renderMovieCard = (mov: any) => (
+  const renderMovieCard = useCallback((mov: any) => (
     <div
       key={mov.stream_id}
       onClick={() => setSelectedMovie(mov)}
@@ -239,8 +255,8 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
           ⭐ {mov.rating}
         </span>
       )}
-    </div>
-  )
+     </div>
+  ), [favorites, toggleFavorite, isFavorite])
 
   return (
     <main className="relative min-h-screen">
@@ -264,7 +280,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
               type="search"
               placeholder="Buscar película por nombre o ID global..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'ArrowDown') {
                   e.preventDefault();
@@ -333,7 +349,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
                   </VirtualRow>
                 )}
                 {filteredCategories.slice(0, visibleCount).map((cat: any) => (
-                  <CategoryRow
+                  <MemoizedCategoryRow
                     key={cat.category_id}
                     category={cat}
                     activeAccount={activeAccount}

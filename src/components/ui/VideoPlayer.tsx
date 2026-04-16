@@ -94,6 +94,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [hasFatalError, setHasFatalError] = useState(false)
   const [requiresInteraction, setRequiresInteraction] = useState(false)
+  const [loadingNative, setLoadingNative] = useState(false)
   
   // Custom Controls State
   const [isPlaying, setIsPlaying] = useState(true)
@@ -187,11 +188,12 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     setCurrentLevel(-1)
 
     // ==========================================
-    // INTEGRACIÓN NATIVA (ANDROID TV / iOS)
+    // INTEGRACIÓN NATIVA (ANDROID TV / iOS) - SOLO VOD
     // ==========================================
-    if (typeof window !== 'undefined' && Capacitor?.isNativePlatform()) {
+    if (typeof window !== 'undefined' && Capacitor?.isNativePlatform() && !isLive) {
       let isExiting = false;
       const initNative = async () => {
+        setLoadingNative(true);
         try {
           await CapacitorVideoPlayer.initPlayer({
             mode: 'fullscreen',
@@ -201,23 +203,26 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
           });
 
           // Escuchar cuando el usuario presiona "Back" o cierra el reproductor nativamente
-          ;(CapacitorVideoPlayer as any).addListener('jeepCapVideoPlayerExit', () => {
-            if (isExiting) return;
-            isExiting = true;
-            // Despachar evento ESCAPE para que la UI de React cierre el modal contenedor
-            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-          });
+          if ((CapacitorVideoPlayer as any).addListener) {
+            ;(CapacitorVideoPlayer as any).addListener('jeepCapVideoPlayerExit', () => {
+              if (isExiting) return;
+              isExiting = true;
+              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+            });
 
-          // Escuchar cuando el video termina (especialmente util para VOD)
-          ;(CapacitorVideoPlayer as any).addListener('jeepCapVideoPlayerEnded', () => {
-            if (isExiting) return;
-            isExiting = true;
-            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-          });
+            ;(CapacitorVideoPlayer as any).addListener('jeepCapVideoPlayerEnded', () => {
+              if (isExiting) return;
+              isExiting = true;
+              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+            });
+          }
+          
+          setLoadingNative(false);
         } catch (err) {
           console.error("Fallo al iniciar CapacitorVideoPlayer:", err);
-          setErrorMsg("Error iniciando el motor nativo del dispositivo.");
+          setErrorMsg("Error iniciando el motor nativo del dispositivo. Intenta nuevamente.");
           setHasFatalError(true);
+          setLoadingNative(false);
         }
       };
 
@@ -225,7 +230,9 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
 
       return () => {
         isExiting = true;
-        ;(CapacitorVideoPlayer as any).removeAllListeners?.().catch(() => {});
+        if ((CapacitorVideoPlayer as any).removeAllListeners) {
+          ;(CapacitorVideoPlayer as any).removeAllListeners().catch(() => {});
+        }
         CapacitorVideoPlayer.stopAllPlayers().catch(() => {});
       };
     }
@@ -393,13 +400,20 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     setPlaybackRate(nextSpeed)
   }
 
-  const isNative = typeof window !== 'undefined' && Capacitor?.isNativePlatform();
+  const isNativeVOD = typeof window !== 'undefined' && Capacitor?.isNativePlatform() && !isLive;
 
-  if (isNative) {
+  if (isNativeVOD && loadingNative && !hasFatalError) {
     return (
-      <div className="w-full h-full bg-black flex flex-col items-center justify-center text-zinc-500 relative z-[40]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500 mb-4"></div>
-        <p className="font-bold tracking-widest text-sm uppercase">Cargando reproductor nativo...</p>
+      <div className="w-full h-full bg-black flex flex-col items-center justify-center text-white relative z-[100]">
+        <button 
+           onClick={() => router.push('/catalog')}
+           className="absolute top-8 right-8 z-[110] p-4 bg-zinc-900/80 rounded-full border border-white/20 text-white"
+        >
+          <X className="w-8 h-8" />
+        </button>
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-rose-500 mb-6"></div>
+        <p className="font-black tracking-[0.2em] text-lg uppercase animate-pulse">Iniciando ExoPlayer Nativo...</p>
+        <p className="text-zinc-500 text-sm mt-2">Soporte para 4K y códecs avanzados de TV</p>
       </div>
     );
   }
@@ -496,13 +510,13 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
                 onClick={togglePlay}
                 className="text-white hover:text-[var(--color-rider-blue)] transition-colors hover:scale-110 active:scale-95"
               >
-                {isPlaying ? <Pause className="w-8 h-8 fill-current drop-shadow-md" /> : <Play className="w-8 h-8 fill-current drop-shadow-md" />}
+                {isPlaying ? <Pause className="w-10 h-10 sm:w-14 sm:h-14 fill-current drop-shadow-md" /> : <Play className="w-10 h-10 sm:w-14 sm:h-14 fill-current drop-shadow-md" />}
               </button>
 
               {/* Volume Control (Only for Pointer Devices like PC) */}
-              <div className="hidden [@media(pointer:fine)]:flex items-center gap-3">
+              <div className="hidden lg:flex items-center gap-4">
                 <button onClick={toggleMute} className="text-white hover:text-[var(--color-rider-blue)] transition-colors">
-                  {isMuted || volume === 0 ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+                  {isMuted || volume === 0 ? <VolumeX className="w-8 h-8" /> : <Volume2 className="w-8 h-8" />}
                 </button>
                 <input 
                   type="range" 
@@ -516,7 +530,9 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
               </div>
 
               {/* Time Display */}
-              <TimeDisplay videoRef={videoRef} isLive={isLive} />
+              <div className="text-lg sm:text-2xl">
+                <TimeDisplay videoRef={videoRef} isLive={isLive} />
+              </div>
 
               <div className="flex-1"></div>
 

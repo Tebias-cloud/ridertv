@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, memo, useCallback } from 'react'
+import debounce from 'lodash/debounce'
 import { Clapperboard, MonitorPlay, X, Play, TvMinimal, Heart } from 'lucide-react'
 import { VideoPlayer } from '@/components/ui/VideoPlayer'
 import { useFavorites } from '@/hooks/useFavorites'
@@ -97,11 +98,26 @@ function SeriesCategoryRow({ category, account, renderSerieCard, onSeriesLoaded 
   )
 }
 
+const MemoizedSeriesCategoryRow = memo(SeriesCategoryRow);
+
 export function SeriesUI({ categories, account }: { categories: any[], account: any }) {
   const { favorites, isLoaded, toggleFavorite, isFavorite } = useFavorites('series')
 
-  const [seriesByCategoryId, setSeriesByCategoryId] = useState<Record<string, any[]>>({})
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [seriesByCategoryId, setSeriesByCategoryId] = useState<Record<string, any[]>>({})
+
+  // Debounce search to avoid expensive re-renders on D-Pad typing
+  const updateSearch = useMemo(() => debounce((q: string) => setDebouncedSearch(q), 400), [])
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val)
+    updateSearch(val)
+  }
+
+  useEffect(() => {
+    return () => updateSearch.cancel()
+  }, [updateSearch])
 
   // Nivel 3: Seleccion de Serie
   const [selectedSerie, setSelectedSerie] = useState<any | null>(null)
@@ -142,13 +158,13 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
 
   // Búsqueda sobre lo ya cargado en memoria
   const searchResults = useMemo(() => {
-    if (!searchQuery) return []
+    if (!debouncedSearch) return []
     const allSeries = Object.values(seriesByCategoryId).flat()
-    const query = searchQuery.toLowerCase()
+    const query = debouncedSearch.toLowerCase()
     return allSeries.filter(s =>
       String(s.name || '').toLowerCase().includes(query)
     ).slice(0, 50)
-  }, [seriesByCategoryId, searchQuery])
+  }, [seriesByCategoryId, debouncedSearch])
 
   // Fetch info episodios al seleccionar una serie
   useEffect(() => {
@@ -182,7 +198,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
     fetchSerieInfo()
   }, [selectedSerie, account])
 
-  const renderSerieCard = (ser: any) => (
+  const renderSerieCard = useCallback((ser: any) => (
      <div 
         key={ser.series_id}
         onClick={() => setSelectedSerie(ser)}
@@ -219,7 +235,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
           ) : null}
         </div>
      </div>
-  )
+  ), [favorites, toggleFavorite, isFavorite])
 
   return (
     <div className="flex flex-col h-full w-full relative z-20 mx-auto max-w-[2000px] mb-12 text-white">
@@ -236,7 +252,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
              type="search" 
              placeholder="Buscar serie..."
              value={searchQuery}
-             onChange={(e) => setSearchQuery(e.target.value)}
+             onChange={(e) => handleSearchChange(e.target.value)}
              onKeyDown={(e) => {
                if (e.key === 'ArrowDown') {
                  e.preventDefault();
@@ -286,7 +302,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
                  </VirtualRow>
                )}
                {filteredCategories.slice(0, visibleCount).map((cat: any) => (
-                  <SeriesCategoryRow 
+                  <MemoizedSeriesCategoryRow 
                      key={cat.category_id} 
                      category={cat} 
                      account={account} 

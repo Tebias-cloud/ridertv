@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, memo, useCallback } from 'react'
+import debounce from 'lodash/debounce'
 import { MonitorPlay, Tv, ArrowLeft, X, Heart } from 'lucide-react'
 import { VideoPlayer } from '@/components/ui/VideoPlayer'
 import { useFavorites } from '@/hooks/useFavorites'
@@ -91,12 +92,27 @@ function LiveCategoryRow({ category, account, renderChannelCard, onChannelsLoade
   )
 }
 
+const MemoizedLiveCategoryRow = memo(LiveCategoryRow);
+
 export function LiveUI({ categories, account }: { categories: any[], account: any }) {
   const { favorites, isLoaded, toggleFavorite, isFavorite } = useFavorites('live')
 
   const [channelsByCategoryId, setChannelsByCategoryId] = useState<Record<string, any[]>>({})
   const [selectedChannel, setSelectedChannel] = useState<any | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  // Debounce search to avoid expensive re-renders on D-Pad typing
+  const updateSearch = useMemo(() => debounce((q: string) => setDebouncedSearch(q), 400), [])
+  
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val)
+    updateSearch(val)
+  }
+
+  useEffect(() => {
+    return () => updateSearch.cancel()
+  }, [updateSearch])
 
   // Smart TV Navigation
   useEffect(() => {
@@ -138,14 +154,14 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
 
   // Búsqueda sobre lo cargado
   const searchResults = useMemo(() => {
-    if (!searchQuery) return []
+    if (!debouncedSearch) return []
     const allChannels = Object.values(channelsByCategoryId).flat()
-    const query = searchQuery.toLowerCase()
+    const query = debouncedSearch.toLowerCase()
     
     return allChannels.filter(chan => 
       String(chan.name || '').toLowerCase().includes(query)
     ).slice(0, 50)
-  }, [channelsByCategoryId, searchQuery])
+  }, [channelsByCategoryId, debouncedSearch])
 
   const formatCompatibleUrl = (url: string) => url.replace(/\.mkv$/i, '.mp4').replace(/\.avi$/i, '.mp4').replace(/\.ts$/i, '.m3u8');
 
@@ -153,7 +169,7 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
   const streamUrl = selectedChannel ? 
       formatCompatibleUrl(`${account.portal_url.replace(/\/$/, '')}/live/${account.username}/${account.password}/${selectedChannel.stream_id}.m3u8`) : ''
 
-  const renderChannelCard = (chan: any) => (
+  const renderChannelCard = useCallback((chan: any) => (
     <div 
        key={chan.stream_id}
        onClick={() => setSelectedChannel(chan)}
@@ -188,7 +204,7 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
           </span>
        </div>
     </div>
-  )
+  ), [favorites, toggleFavorite, isFavorite])
 
   return (
     <div className="flex flex-col h-full w-full relative z-20 mx-auto px-4 sm:px-8 max-w-[2000px] pb-12 text-white overflow-x-hidden">
@@ -202,20 +218,20 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
         </div>
 
         <div className="relative w-full sm:w-72">
-           <input 
-             type="search" 
-             placeholder={"Buscar canal..."}
-                 value={searchQuery}
-                 onChange={(e) => setSearchQuery(e.target.value)}
-                 onKeyDown={(e) => {
-                   if (e.key === 'ArrowDown') {
-                     e.preventDefault();
-                     const firstItem = document.querySelector('.nav-item, button:not([disabled])') as HTMLElement;
-                     if (firstItem) firstItem.focus();
-                   }
-                 }}
-                 className="w-full bg-zinc-900 border border-zinc-800 rounded-full py-3 px-6 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[var(--color-rider-blue)]/50 focus:ring-1 focus:ring-[var(--color-rider-blue)]/50 transition-all shadow-inner"
-           />
+            <input 
+              type="search" 
+              placeholder={"Buscar canal..."}
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  const firstItem = document.querySelector('.nav-item, button:not([disabled])') as HTMLElement;
+                  if (firstItem) firstItem.focus();
+                }
+              }}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-full py-3 px-6 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[var(--color-rider-blue)]/50 focus:ring-1 focus:ring-[var(--color-rider-blue)]/50 transition-all shadow-inner"
+            />
         </div>
       </div>
 
@@ -256,7 +272,7 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
                  </VirtualRow>
                )}
                {filteredCategories.slice(0, visibleCount).map((cat: any) => (
-                  <LiveCategoryRow 
+                  <MemoizedLiveCategoryRow 
                      key={cat.category_id} 
                      category={cat} 
                      account={account} 

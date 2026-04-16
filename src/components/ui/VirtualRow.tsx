@@ -26,7 +26,7 @@ export function VirtualRow({ children }: { children: React.ReactNode }) {
         }
       })
     }, {
-      rootMargin: '1800px 0px' // Mantiene vivas 1 o 2 filas por arriba y abajo, desmonta las demás.
+      rootMargin: '600px 0px' // Optimizado para Android TV: Mantiene menos filas en memoria para ahorrar RAM.
     })
 
     observer.observe(containerRef.current)
