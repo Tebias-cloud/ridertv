@@ -5,6 +5,9 @@ import Hls from 'hls.js'
 import { useRouter } from 'next/navigation'
 import { X, Play, Pause, Volume2, VolumeX, Maximize, MonitorX, Settings, AlertCircle, ExternalLink } from 'lucide-react'
 
+import { Capacitor } from '@capacitor/core'
+import { CapacitorVideoPlayer } from '@capgo/capacitor-video-player'
+
 interface VideoPlayerProps {
   streamUrl: string
   isLive?: boolean
@@ -183,6 +186,56 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     setHlsLevels([])
     setCurrentLevel(-1)
 
+    // ==========================================
+    // INTEGRACIÓN NATIVA (ANDROID TV / iOS)
+    // ==========================================
+    if (typeof window !== 'undefined' && Capacitor?.isNativePlatform()) {
+      let isExiting = false;
+      const initNative = async () => {
+        try {
+          await CapacitorVideoPlayer.initPlayer({
+            mode: 'fullscreen',
+            url: safeUrl,
+            playerId: 'rider-fullscreen',
+            componentTag: 'capacitor-video-player'
+          });
+
+          // Escuchar cuando el usuario presiona "Back" o cierra el reproductor nativamente
+          CapacitorVideoPlayer.addListener('jeepCapVideoPlayerExit', () => {
+            if (isExiting) return;
+            isExiting = true;
+            // Despachar evento ESCAPE para que la UI de React cierre el modal contenedor
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+          });
+
+          // Escuchar cuando el video termina (especialmente util para VOD)
+          CapacitorVideoPlayer.addListener('jeepCapVideoPlayerEnded', () => {
+            if (isExiting) return;
+            isExiting = true;
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+          });
+        } catch (err) {
+          console.error("Fallo al iniciar CapacitorVideoPlayer:", err);
+          setErrorMsg("Error iniciando el motor nativo del dispositivo.");
+          setHasFatalError(true);
+        }
+      };
+
+      initNative();
+
+      return () => {
+        isExiting = true;
+        CapacitorVideoPlayer.removeAllListeners().catch(() => {});
+        CapacitorVideoPlayer.stopAllPlayers().catch(() => {});
+      };
+    }
+
+    // ==========================================
+    // INTEGRACIÓN WEB (HTML5 / HLS.js)
+    // ==========================================
+    const video = videoRef.current
+    if (!video) return
+
     let hls: Hls
 
     const playVideo = () => {
@@ -210,7 +263,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
 
     const isHls = safeUrl.includes('.m3u8') || safeUrl.includes('.ts')
 
-    const playNative = () => {
+    const playNativeUrl = () => {
       video.src = safeUrl
       video.addEventListener('loadedmetadata', () => {
         playVideo()
@@ -222,7 +275,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
       if (Hls.isSupported() && !isIOS) {
-        // Prioridad total a HLS.js en Android/PC (El nativo suele fallar y arrojar Error 4 en TV WebViews)
+        // Prioridad total a HLS.js en Android/PC (El nativo suele fallar y arrojar Error 4 en TV WebViews si Capacitor falla o es navegador)
         hls = new Hls({
           maxBufferSize: 0,
           maxBufferLength: 30,
@@ -260,14 +313,12 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
         })
         hlsRef.current = hls
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Fallback Nativo o exclusividad iOS Safari
-        playNative()
+        playNativeUrl()
       } else {
-        // Extremo fallback
-        playNative()
+        playNativeUrl()
       }
     } else {
-      playNative()
+      playNativeUrl()
     }
 
     return () => {
@@ -340,6 +391,17 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
       videoRef.current.playbackRate = nextSpeed
     }
     setPlaybackRate(nextSpeed)
+  }
+
+  const isNative = typeof window !== 'undefined' && Capacitor?.isNativePlatform();
+
+  if (isNative) {
+    return (
+      <div className="w-full h-full bg-black flex flex-col items-center justify-center text-zinc-500 relative z-[40]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500 mb-4"></div>
+        <p className="font-bold tracking-widest text-sm uppercase">Cargando reproductor nativo...</p>
+      </div>
+    );
   }
 
   return (
