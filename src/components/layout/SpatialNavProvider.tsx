@@ -39,6 +39,7 @@ export function SpatialNavProvider({ children }: { children: React.ReactNode }) 
     await supabase.auth.signOut()
     localStorage.clear() // Limpiar credenciales de IPTV persistentes
     setIsExitDialogOpen(false)
+    // Usamos replace con scroll: false para minimizar impacto
     router.replace('/')
   }
 

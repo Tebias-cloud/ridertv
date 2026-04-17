@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: process.env.EXPORT_MODE === 'true' ? 'export' : undefined,
+  output: 'export',
   trailingSlash: true,
   skipTrailingSlashRedirect: true,
   images: {
@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
+  },
+  experimental: {
+    optimizeCss: false,
   },
 };
 
