@@ -11,16 +11,34 @@ export function SpatialNavProvider({ children }: { children: React.ReactNode }) 
       const SpatialNavigation = require('spatial-navigation-js')
       try {
         SpatialNavigation.init()
-        SpatialNavigation.add({
-          selector: '.nav-item, button:not([disabled]), input, a[href]'
-        })
-        SpatialNavigation.makeFocusable()
         
+        // Configuración Global
         SpatialNavigation.set({
           rememberSource: true,
           straightOnly: false,
-          straightOverlapThreshold: 0.5,
+          straightOverlapThreshold: 0.1, // Más estricto para evitar saltos diagonales
         })
+
+        // Sección SIDEBAR: Solo accesible desde la izquierda
+        SpatialNavigation.add('sidebar', {
+          selector: '.sidebar-item',
+          enterTo: 'last-focused',
+        })
+
+        // Sección CONTENIDO: Galería principal
+        SpatialNavigation.add('content', {
+          selector: '.nav-item, button:not([disabled]), input, a[href]:not(.sidebar-item)',
+          enterTo: 'last-focused',
+        })
+
+        // Restricción: No saltar al sidebar automáticamente al navegar arriba/abajo
+        SpatialNavigation.set('sidebar', {
+          nextElementByDirection: {
+            right: '@content'
+          }
+        })
+
+        SpatialNavigation.makeFocusable()
 
         // 🔥 UX: Auto-scroll centrado para TV
         const handleFocused = (e: any) => {

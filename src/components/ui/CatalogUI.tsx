@@ -32,7 +32,7 @@ function CategoryRow({ category, activeAccount, renderMovieCard, onMoviesLoaded 
         setIsVisible(true)
         observer.disconnect()
       }
-    }, { threshold: 0.1, rootMargin: '400px' })
+    }, { threshold: 0.1, rootMargin: '1000px' }) // Carga mucho más anticipada para fluidez
 
     if (rowRef.current) observer.observe(rowRef.current)
     return () => observer.disconnect()
@@ -221,13 +221,13 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
     async function fetchDeepInfo() {
       setLoadingInfo(true)
       try {
-        const proxyUrl = `${(activeAccount.portal_url.endsWith('/') ? activeAccount.portal_url.slice(0, -1) : activeAccount.portal_url)}/player_api.php?username=${activeAccount.username}&password=${activeAccount.password}&action=get_vod_info&vod_id=${selectedMovie.stream_id}`
-        const res = await fetch(proxyUrl)
-        if (res.ok) {
-          const data = await res.json()
-          if (data && data.info) {
-            setMovieInfo(data.info)
-          }
+        const baseUrl = getBaseUrl(activeAccount.portal_url)
+        const proxyUrl = `${baseUrl}/player_api.php?username=${activeAccount.username}&password=${activeAccount.password}&action=get_vod_info&vod_id=${selectedMovie.stream_id}`
+        
+        // 🔥 Corrección: Usar fetchIptv para manejar proxy/native y UA correctamente
+        const data = await fetchIptv(proxyUrl)
+        if (data && data.info) {
+          setMovieInfo(data.info)
         }
       } catch (err) {
         console.error("Deep Fetch failed: ", err)

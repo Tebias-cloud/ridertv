@@ -4,7 +4,7 @@ const fs = require('fs');
 
 const envConfig = dotenv.parse(fs.readFileSync('.env.local'));
 const supabaseUrl = envConfig.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey = envConfig.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseServiceRoleKey = envConfig.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false }

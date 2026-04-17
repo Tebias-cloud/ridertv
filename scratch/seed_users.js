@@ -10,7 +10,7 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 
 const envConfig = dotenv.parse(fs.readFileSync('.env.local'));
-const supabase = createClient(envConfig.NEXT_PUBLIC_SUPABASE_URL, envConfig.SUPABASE_SERVICE_ROLE_KEY, {
+const supabase = createClient(envConfig.NEXT_PUBLIC_SUPABASE_URL, envConfig.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
 

@@ -1,43 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+/**
+ * API Proxy for IPTV Metadata
+ * This bypasses CORS and Mixed Content restrictions on Web.
+ * It also injects the standard VLC User-Agent to avoid provider blocking.
+ */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const targetUrl = searchParams.get('url');
 
   if (!targetUrl) {
-    return NextResponse.json({ error: 'Missing target URL' }, { status: 400 });
+    return NextResponse.json({ error: 'Missing url parameter' }, { status: 400 });
   }
 
   try {
-    // Only allow IPTV provider domain for security
-    const allowedHost = 'poraquivamosentrando.vip';
-    const urlObj = new URL(targetUrl);
+    console.log(`📡 [Proxy] Forwarding to: ${targetUrl}`);
     
-    if (urlObj.hostname !== allowedHost) {
-      return NextResponse.json({ error: 'Domain not allowed' }, { status: 403 });
-    }
-
     const response = await fetch(targetUrl, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'RiderTV-Proxy/1.0'
+        'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
+        'Accept': '*/*',
+        'Connection': 'keep-alive',
       },
+      // Desactivar cache para asegurar datos frescos del proveedor
       cache: 'no-store'
     });
 
-    if (!response.ok) {
-      return NextResponse.json({ 
-        error: `IPTV Provider returned ${response.status}`,
-        details: await response.text()
-      }, { status: response.status });
-    }
-
     const data = await response.json();
     return NextResponse.json(data);
-
+    
   } catch (error: any) {
-    console.error('[IPTV Proxy Error]:', error);
-    return NextResponse.json({ error: 'Failed to fetch from IPTV provider', details: error.message }, { status: 500 });
+    console.error('❌ [Proxy] Error:', error.message);
+    return NextResponse.json({ 
+      error: 'Failed to fetch from IPTV provider',
+      details: error.message 
+    }, { status: 502 });
   }
 }

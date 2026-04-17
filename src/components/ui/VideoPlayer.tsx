@@ -176,40 +176,52 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     const video = videoRef.current
     if (!video || !streamUrl) return
     
-    // 🔥 Estabilidad: Usar la URL original (normalmente http con puerto 8080)
-    // El motor nativo ya permite cleartext traffic y el servidor de Rober lo requiere.
-    let safeUrl = streamUrl;
+    // 🔥 Estabilidad: Bypass del Interceptor de Capacitor
+    // CapacitorHttp rewrite URLs para manejar CORS/Cookies, pero ExoPlayer falla
+    // si recibe una URL de localhost/_capacitor_http_interceptor_.
+    // Extraemos la URL original (raw) para el motor nativo.
+    const getRawUrl = (url: string): string => {
+      if (typeof url !== 'string') return url;
+      if (url.includes('_capacitor_http_interceptor_')) {
+        try {
+          const urlObj = new URL(url);
+          // Capacitor suele usar 'url' como parámetro del interceptor
+          const raw = urlObj.searchParams.get('url');
+          if (raw) return decodeURIComponent(raw);
+        } catch (e) {
+          console.error("Error decodificando URL de Capacitor:", e);
+        }
+      }
+      return url;
+    };
 
-    console.log("🔗 URL del stream solicitada:", safeUrl)
+    let safeUrl = getRawUrl(streamUrl);
+
+    console.log("🔗 URL del stream solicitada (Bypass Interceptor):", safeUrl)
     setErrorMsg(null)
     setHasFatalError(false)
     setHlsLevels([])
     setCurrentLevel(-1)
 
     // ==========================================
-    // INTEGRACIÓN NATIVA (ANDROID TV / iOS) - SOLO VOD
+    // INTEGRACIÓN NATIVA (ANDROID TV / MOBILE)
     // ==========================================
-    // ==========================================
-    // ESCUCHA DEL BOTÓN ATRÁS (HARDWARE BACK BUTTON)
-    // ==========================================
+    const isNativePlatform = Capacitor.isNativePlatform();
+    const VLC_USER_AGENT = 'VLC/3.0.18 LibVLC/3.0.18';
+
     let backListener: any = null;
     const setupBackListener = async () => {
       backListener = await App.addListener('backButton', () => {
-        console.log("Hardware Back Button pressed. Closing player...");
-        // 1. Detener motores nativos (Capacitor)
-        if (Capacitor.isNativePlatform()) {
+        console.log("Back button pressed, stopping native player...");
+        if (isNativePlatform) {
           CapacitorVideoPlayer.stopAllPlayers().catch(() => {});
         }
-        // 2. Volver al catálogo (React State)
         router.push('/catalog');
       });
     };
     setupBackListener();
 
-    // ==========================================
-    // INTEGRACIÓN NATIVA (ANDROID TV / iOS) - SOLO VOD
-    // ==========================================
-    if (typeof window !== 'undefined' && Capacitor?.isNativePlatform() && !isLive) {
+    if (typeof window !== 'undefined' && isNativePlatform) {
       let isExiting = false;
 
       const initNative = async () => {
@@ -229,6 +241,15 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
               if (isExiting) return;
               isExiting = true;
               router.push('/catalog');
+            });
+            
+            // Panic Exit: Error listener para el motor nativo
+            ;(CapacitorVideoPlayer as any).addListener('jeepCapVideoPlayerError', (data: any) => {
+              console.error("Native Player Error Signal:", data);
+              setErrorMsg("Error fatal en el motor nativo. Reintentando...");
+              setHasFatalError(true);
+              CapacitorVideoPlayer.stopAllPlayers().catch(() => {});
+              setTimeout(() => router.push('/catalog'), 2000);
             });
           }
 
@@ -256,10 +277,13 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
           
           setLoadingNative(false);
         } catch (err) {
-          console.error("Fallo al iniciar CapacitorVideoPlayer:", err);
-          setErrorMsg("Error iniciando el motor nativo del dispositivo. Intenta nuevamente.");
+          console.error("Fallo crítico al iniciar CapacitorVideoPlayer:", err);
+          setErrorMsg("No se pudo iniciar el motor nativo. Regresando...");
           setHasFatalError(true);
           setLoadingNative(false);
+          // Destrucción total y regreso preventivo
+          CapacitorVideoPlayer.stopAllPlayers().catch(() => {});
+          setTimeout(() => router.push('/catalog'), 2500);
         }
       };
 
@@ -278,6 +302,8 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     // ==========================================
     // INTEGRACIÓN WEB (HTML5 / HLS.js)
     // ==========================================
+    if (isNativePlatform) return; // 🔥 GUARDIA CRÍTICA: No inicializar lógica web en nativo
+
     const webVideo = videoRef.current
     if (!webVideo) return
 
@@ -438,9 +464,9 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     setPlaybackRate(nextSpeed)
   }
 
-  const isNativeVOD = typeof window !== 'undefined' && Capacitor?.isNativePlatform() && !isLive;
+  const isNativePlatform = typeof window !== 'undefined' && Capacitor?.isNativePlatform();
 
-  if (isNativeVOD && loadingNative && !hasFatalError) {
+  if (isNativePlatform && loadingNative && !hasFatalError) {
     return (
       <div className="w-full h-full bg-black flex flex-col items-center justify-center text-white relative z-[100]">
         <button 
@@ -450,8 +476,8 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
           <X className="w-8 h-8" />
         </button>
         <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-rose-500 mb-6"></div>
-        <p className="font-black tracking-[0.2em] text-lg uppercase animate-pulse">Iniciando ExoPlayer Nativo...</p>
-        <p className="text-zinc-500 text-sm mt-2">Soporte para 4K y códecs avanzados de TV</p>
+        <p className="font-black tracking-[0.2em] text-lg uppercase animate-pulse">Iniciando Motor Nativo...</p>
+        <p className="text-zinc-500 text-sm mt-2">{isLive ? 'Sintonizando Señal EN VIVO...' : 'Preparando VOD de alta fidelidad...'}</p>
       </div>
     );
   }
@@ -523,16 +549,19 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
         </div>
       ) : (
         <>
-          <video
-            ref={videoRef}
-            onClick={togglePlay}
-            controls={false}
-            className="w-full h-full object-contain relative z-[40] cursor-pointer"
-            autoPlay
-            playsInline
-            muted={isMuted}
-            style={{ backgroundColor: '#000' }}
-          />
+          {/* Solo renderizar el video web si NO estamos en plataforma nativa */}
+          {!isNativePlatform && (
+            <video
+              ref={videoRef}
+              onClick={togglePlay}
+              controls={false}
+              className="w-full h-full object-contain relative z-[40] cursor-pointer"
+              autoPlay
+              playsInline
+              muted={isMuted}
+              style={{ backgroundColor: '#000' }}
+            />
+          )}
 
           {/* CUSTOM CONTROLS OVERLAY */}
           <div 
@@ -544,12 +573,14 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
 
             <div className="flex items-center gap-6 mt-4 w-full">
               {/* Play/Pause */}
-              <button 
-                onClick={togglePlay}
-                className="text-white hover:text-[var(--color-rider-blue)] transition-colors hover:scale-110 active:scale-95"
-              >
-                {isPlaying ? <Pause className="w-10 h-10 sm:w-14 sm:h-14 fill-current drop-shadow-md" /> : <Play className="w-10 h-10 sm:w-14 sm:h-14 fill-current drop-shadow-md" />}
-              </button>
+              {!isNativePlatform && (
+                <button 
+                  onClick={togglePlay}
+                  className="text-white hover:text-[var(--color-rider-blue)] transition-colors hover:scale-110 active:scale-95"
+                >
+                  {isPlaying ? <Pause className="w-10 h-10 sm:w-14 sm:h-14 fill-current drop-shadow-md" /> : <Play className="w-10 h-10 sm:w-14 sm:h-14 fill-current drop-shadow-md" />}
+                </button>
+              )}
 
               {/* Volume Control (Only for Pointer Devices like PC) */}
               <div className="hidden lg:flex items-center gap-4">

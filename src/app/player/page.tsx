@@ -3,7 +3,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { VideoPlayer } from '@/components/ui/VideoPlayer'
 import { Logo } from '@/components/ui/Logo'
-import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 

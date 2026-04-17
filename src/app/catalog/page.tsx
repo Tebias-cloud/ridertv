@@ -114,7 +114,7 @@ export default function CatalogPage() {
              <p className="text-zinc-400 max-w-lg mx-auto mb-10 text-lg leading-relaxed">
                Tu cuenta no cuenta actualmente con un pase digital habilitado. Contacta a soporte para adquirir o renovar tu suscripción VIP.
              </p>
-             <Link href="mailto:soporte@rideriptv.com">
+             <Link href="mailto:soporte@rideriptv.com" prefetch={false}>
                  <button className="px-10 py-4 cursor-pointer bg-white text-zinc-950 hover:bg-zinc-200 transition-all hover:scale-105 rounded-full font-bold shadow-[0_0_40px_rgba(255,255,255,0.15)] flex items-center gap-2">
                    Contactar Soporte
                  </button>
