@@ -60,7 +60,7 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
 
   return (
     <>
-      <aside className="fixed left-0 top-0 h-screen w-[260px] bg-zinc-950/80 backdrop-blur-3xl border-r border-white/5 flex flex-col py-8 px-6 z-50 transform-gpu will-change-transform">
+      <aside className="sticky top-0 h-screen w-[280px] bg-zinc-950/80 backdrop-blur-3xl border-r border-white/5 flex flex-col py-8 px-6 z-50 shrink-0 transform-gpu will-change-transform">
         <div className="mb-12">
           <h2 className="text-2xl md:text-3xl tracking-[0.1em] font-extrabold uppercase bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-blue-500 drop-shadow-lg">
             RIDER TV

@@ -251,7 +251,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
   ), [favorites, toggleFavorite, isFavorite])
 
   return (
-    <div className="flex flex-col h-full w-full relative z-20 mx-auto max-w-[2000px] mb-12 text-white">
+    <div className="flex flex-col h-full w-full relative z-20 mb-12 text-white">
       
       <div className="sticky top-0 z-[60] bg-zinc-950/90 backdrop-blur-3xl py-4 flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-zinc-800 shadow-xl shadow-black mb-8 px-4 sm:px-8 pt-8">
         <div className="flex items-center gap-4 basis-1/2">
@@ -281,7 +281,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
 
 
       {searchQuery ? (
-        <section className="relative z-20 pt-8 px-4 sm:px-8 max-w-[2000px] mx-auto pb-32">
+        <section className="relative z-20 pt-8 px-4 sm:px-8 w-full pb-32">
           <div className="mb-4">
              <h3 className="text-xl font-bold text-zinc-500">Resultados para: <span className="text-white">{searchQuery}</span></h3>
           </div>
@@ -298,7 +298,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
           )}
         </section>
       ) : (
-        <div className="relative z-30 max-w-[2000px] mx-auto pb-32 mt-4 space-y-12 sm:space-y-16">
+        <div className="relative z-30 w-full pb-32 mt-4 space-y-12 sm:space-y-16">
           {filteredCategories.length > 0 ? (
             <>
                {isLoaded && favorites.length > 0 && (

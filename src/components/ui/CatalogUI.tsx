@@ -299,7 +299,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
     <main className="relative min-h-screen">
 
       {/* GLOBAL SEARCH TOP_BAR (Always Visible) */}
-      <div className={`fixed top-0 w-full lg:w-[calc(100%-260px)] right-0 z-[60] bg-zinc-950/80 backdrop-blur-3xl border-b border-zinc-800/50 py-4 px-4 sm:px-8 transition-all`}>
+      <div className={`fixed top-0 w-full lg:w-[calc(100%-280px)] right-0 z-[60] bg-zinc-950/80 backdrop-blur-3xl border-b border-zinc-800/50 py-4 px-4 sm:px-8 transition-all`}>
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 max-w-[2000px] mx-auto">
           {searchQuery ? (
             <h2 className="text-xl font-bold text-white tracking-widest uppercase flex items-center gap-3 w-full sm:w-auto">
@@ -339,7 +339,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
 
 
       {searchQuery ? (
-        <section className="relative z-20 pt-32 px-4 sm:px-8 max-w-[2000px] mx-auto pb-32 min-h-screen">
+        <section className="relative z-20 pt-32 px-4 sm:px-8 w-full pb-32 min-h-screen">
           <div className="mb-8">
             <h3 className="text-2xl font-black text-white flex items-center gap-2">
               Resultados en Memoria <ChevronRight className="w-6 h-6 text-zinc-600" />
@@ -368,7 +368,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
             <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-zinc-950 to-transparent z-20" />
           </section>
 
-          <section className="relative z-30 max-w-[2000px] mx-auto pb-32 -mt-10 space-y-12 sm:space-y-16">
+          <section className="relative z-30 w-full pb-32 -mt-10 space-y-12 sm:space-y-16">
 
             {filteredCategories.length > 0 ? (
               <>
