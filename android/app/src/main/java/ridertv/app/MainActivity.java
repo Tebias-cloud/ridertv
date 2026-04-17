@@ -1,3 +1,5 @@
+package ridertv.app;
+
 import android.media.AudioManager;
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;

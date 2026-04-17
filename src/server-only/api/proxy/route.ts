@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'User-Agent': 'RiderTV-Proxy/1.0'
+        'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18'
       },
       cache: 'no-store'
     });
