@@ -13,7 +13,7 @@ const CACHE_TTL = 1000 * 60 * 10 // 10 minutos de cache para máxima fluidez
  * - On Native (Android TV/Mobile): Fetches directly from the provider (no CORS/Mixed Content issues)
  * - On Web (Vercel): Fetches through the local /api/proxy to bypass browser restrictions
  */
-export async function fetchIptv(url: string, options: RequestInit = {}) {
+export async function fetchIptv(url: string, options: RequestInit = {}, retries = 2) {
   // Check Cache (Solo para GET)
   const isGet = !options.method || options.method === 'GET'
   if (isGet && URL_CACHE.has(url)) {
@@ -28,35 +28,43 @@ export async function fetchIptv(url: string, options: RequestInit = {}) {
   
   let finalUrl = url
   if (!isNative) {
-    // On web, use the local proxy
     finalUrl = `/api/proxy?url=${encodeURIComponent(url)}`
-  } else if (!url.startsWith('http')) {
-    // FALLBACK: Si por alguna razón la URL es relativa en nativo, 
-    // Capacitor intentará cargarla de https://localhost, lo cual fallará.
-    // Aunque esto no debería pasar con getBaseUrl, agregamos seguridad.
-    console.warn("⚠️ URL de IPTV no absoluta detectada en Nativo:", url)
   }
 
-  const response = await fetch(finalUrl, {
-    ...options,
-    headers: {
-      ...options.headers,
-      'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
+  let lastError: any;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      if (i > 0) console.log(`🔄 [Retry ${i}/${retries}] IPTV Fetch:`, url.substring(0, 50) + "...")
+      
+      const response = await fetch(finalUrl, {
+        ...options,
+        headers: {
+          ...options.headers,
+          'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`IPTV request failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+      
+      if (isGet) {
+        URL_CACHE.set(url, { data, timestamp: Date.now() })
+      }
+
+      return data
+    } catch (err) {
+      lastError = err;
+      if (i < retries) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))) // Exponential delay
+      }
     }
-  })
-
-  if (!response.ok) {
-    throw new Error(`IPTV request failed: ${response.status}`)
   }
 
-  const data = await response.json()
-  
-  // Guardar en cache si es exitoso
-  if (isGet) {
-    URL_CACHE.set(url, { data, timestamp: Date.now() })
-  }
-
-  return data
+  console.error("❌ [IPTV Fetch Failed] Final:", url, lastError)
+  throw lastError
 }
 
 /**

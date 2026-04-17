@@ -32,16 +32,19 @@ export default function RootLayout({
       className={`${inter.variable} h-full antialiased dark`}
     >
       <head>
-        {/* NUCLEAR FIX 2.0: Prefetch Killer Script */}
+        {/* NUCLEAR FIX 2.1: Aggressive Prefetch Killer Script */}
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
+            // 1. Patch Fetch y XHR para interceptar peticiones programáticas
             var originalFetch = window.fetch;
             window.fetch = function(input, init) {
-              if (typeof input === 'string' && (input.includes('_rsc') || input.endsWith('.txt'))) {
+              var url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+              if (url.includes('_rsc') || url.includes('.txt')) {
                 return Promise.resolve(new Response('', { status: 200, statusText: 'OK' }));
               }
               return originalFetch.apply(this, arguments);
             };
+
             var originalXHR = window.XMLHttpRequest.prototype.open;
             window.XMLHttpRequest.prototype.open = function(method, url) {
               if (url && (url.includes('_rsc') || url.includes('.txt'))) {
@@ -50,7 +53,52 @@ export default function RootLayout({
               }
               return originalXHR.apply(this, arguments);
             };
-            console.log('⚡ [Nuclear Fix] Prefetch Killer Active');
+
+            // 2. Patch document.createElement para bloquear la creación de <link rel="prefetch">
+            var originalCreateElement = document.createElement;
+            document.createElement = function(tagName) {
+              var el = originalCreateElement.apply(document, arguments);
+              if (tagName.toLowerCase() === 'link') {
+                var originalSetAttribute = el.setAttribute;
+                el.setAttribute = function(name, value) {
+                  if (name === 'rel' && (value === 'prefetch' || value === 'next-prefetch')) {
+                    // Bloqueamos el prefetch
+                    return;
+                  }
+                  if (name === 'href' && (value.includes('_rsc') || value.includes('.txt'))) {
+                    // Bloqueamos el destino del prefetch
+                    return;
+                  }
+                  originalSetAttribute.apply(el, arguments);
+                };
+              }
+              return el;
+            };
+
+            // 3. MutationObserver para eliminar cualquier prefetch que se cuele en el DOM
+            var observer = new MutationObserver(function(mutations) {
+              mutations.forEach(function(mutation) {
+                mutation.addedNodes.forEach(function(node) {
+                  if (node.tagName === 'LINK' && (node.rel === 'prefetch' || node.rel === 'next-prefetch' || node.as === 'fetch')) {
+                    if (node.href.includes('_rsc') || node.href.includes('.txt')) {
+                       node.href = ''; 
+                       node.remove();
+                    }
+                  }
+                });
+              });
+            });
+            
+            // Esperar a que el DOM esté listo o usar el head directamente
+            if (document.head) {
+              observer.observe(document.head, { childList: true });
+            } else {
+              document.addEventListener('DOMContentLoaded', function() {
+                observer.observe(document.head, { childList: true });
+              });
+            }
+
+            console.log('⚡ [Nuclear Fix 2.1] Aggressive Prefetch Killer Active');
           })();
         `}} />
         <meta httpEquiv="Content-Security-Policy" content="upgrade-insecure-requests" />
