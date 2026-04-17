@@ -31,23 +31,34 @@ export function SpatialNavProvider({ children }: { children: React.ReactNode }) 
           enterTo: 'last-focused',
         })
 
-        // Restricción: No saltar al sidebar automáticamente al navegar arriba/abajo
+        // Restricción: Salida del sidebar hacia el contenido
         SpatialNavigation.set('sidebar', {
           nextElementByDirection: {
             right: '@content'
           }
         })
 
+        // 🔥 Escape: Salida del contenido hacia el sidebar (Novedad clave)
+        SpatialNavigation.set('content', {
+          nextElementByDirection: {
+            left: '@sidebar'
+          }
+        })
+
         SpatialNavigation.makeFocusable()
 
-        // 🔥 UX: Auto-scroll centrado para TV
+        // 🔥 UX: Auto-scroll centrado para TV (Optimizado para evitar parpadeos)
         const handleFocused = (e: any) => {
           const element = e.target;
           if (element) {
+            const isSidebar = element.classList.contains('sidebar-item');
+            
+            // Si es sidebar, no necesitamos scroll horizontal, solo vertical suave
+            // Si es contenido, queremos centrarlo
             element.scrollIntoView({
               behavior: 'smooth',
               block: 'center',
-              inline: 'center'
+              inline: isSidebar ? 'nearest' : 'center'
             });
           }
         };

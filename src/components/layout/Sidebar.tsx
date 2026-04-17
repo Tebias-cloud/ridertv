@@ -75,9 +75,9 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
                 key={link.name} 
                 href={link.href} 
                 prefetch={false}
-                className={`sidebar-item flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 ease-out transform-gpu ${isActive ? 'bg-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] scale-[1.02]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5 hover:scale-[1.02]'}`}
+                className={`sidebar-item flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 ease-out transform-gpu outline-none ${isActive ? 'bg-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] scale-[1.02]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5 focus:bg-white/10 focus:text-white'}`}
               >
-                <link.icon className={`w-5 h-5 ${isActive ? 'text-[var(--color-rider-blue)]' : ''}`} />
+                <link.icon className={`w-5 h-5 transition-colors ${isActive ? 'text-[var(--color-rider-blue)]' : 'group-focus:text-[var(--color-rider-blue)]'}`} />
                 {link.name}
               </Link>
             )
@@ -87,9 +87,9 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
         <div className="mt-8 border-t border-white/5 pt-6 space-y-2">
            <button 
              onClick={() => setAccountModalOpen(true)}
-             className="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl text-zinc-500 hover:text-white hover:bg-white/5 transition-all duration-300 font-medium group"
+             className="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl text-zinc-500 hover:text-white hover:bg-white/5 focus:bg-white/10 focus:text-white transition-all duration-300 font-medium group outline-none"
            >
-             <User className="w-5 h-5 group-hover:text-[var(--color-rider-blue)] transition-colors" />
+             <User className="w-5 h-5 group-hover:text-[var(--color-rider-blue)] group-focus:text-[var(--color-rider-blue)] transition-colors" />
              Mi Cuenta
            </button>
            <button 
@@ -99,9 +99,9 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
                 sessionStorage.clear()
                 window.location.href = '/'
              }}
-             className="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl text-zinc-500 hover:text-red-500 hover:bg-red-500/10 transition-all duration-300 font-medium group"
+             className="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl text-zinc-500 hover:text-red-500 hover:bg-red-500/10 focus:bg-red-500/20 focus:text-red-500 transition-all duration-300 font-medium group outline-none"
            >
-             <LogOut className="w-5 h-5 group-hover:text-red-500 transition-colors" />
+             <LogOut className="w-5 h-5 group-hover:text-red-500 group-focus:text-red-500 transition-colors" />
              Cerrar Sesión
            </button>
         </div>

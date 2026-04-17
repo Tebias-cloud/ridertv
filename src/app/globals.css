@@ -25,4 +25,36 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+
+  /* 🔥 RIDER PREMIUM FOCUS SYSTEM */
+  .focus {
+    outline: none !important;
+    position: relative;
+    z-index: 50 !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transform: scale(1.08) !important;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3), 
+                0 0 30px 10px rgba(37, 99, 235, 0.6) !important; /* Glow azul Rider */
+  }
+
+  /* Variación roja para elementos de peligro o específicos */
+  .focus.border-rose-500,
+  .focus.text-rose-500 {
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3), 
+                0 0 30px 10px rgba(220, 38, 38, 0.6) !important; /* Glow rojo Rider */
+  }
+
+  .nav-item, .sidebar-item {
+     will-change: transform, box-shadow;
+  }
+
+  /* Ocultar cursor del mouse en TV */
+  @media (pointer: coarse) {
+    * { cursor: none !important; }
+  }
+
+  /* Scroll suave global */
+  html {
+     scroll-behavior: smooth;
+  }
 }

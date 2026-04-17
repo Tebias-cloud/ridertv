@@ -83,7 +83,11 @@ function CategoryRow({ category, activeAccount, renderMovieCard, onMoviesLoaded 
         >
           {loading ? (
             [...Array(6)].map((_, j) => (
-              <div key={`skel-${category.category_id}-${j}`} className="shrink-0 w-36 sm:w-48 aspect-[2/3] bg-zinc-900/50 rounded-2xl animate-pulse"></div>
+              <div 
+                key={`skel-${category.category_id}-${j}`} 
+                className="nav-item shrink-0 w-36 sm:w-48 aspect-[2/3] bg-zinc-900/50 rounded-2xl animate-pulse outline-none"
+                tabIndex={0}
+              ></div>
             ))
           ) : error ? (
             <div className="flex items-center gap-3 py-10 px-6 bg-zinc-900/40 rounded-2xl border border-zinc-800 text-zinc-500">
@@ -129,18 +133,25 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
   // Smart TV Navigation (Escape/Backspace to close modals)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === 'Backspace') {
-        if (selectedMovie || playingMovie) {
+      // 27 = Escape, 8 = Backspace, 4 = Android Back
+      if (e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 8 || e.keyCode === 27) {
+        if (playingMovie) {
+          e.preventDefault()
+          e.stopPropagation()
+          setPlayingMovie(null)
+          return
+        }
+        if (selectedMovie) {
           e.preventDefault()
           e.stopPropagation()
           setSelectedMovie(null)
-          setPlayingMovie(null)
+          return
         }
       }
     }
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [])
+  }, [selectedMovie, playingMovie])
 
   const bannedKeywords = ['xxx', 'brazzer', 'adult', '18+', 'porn', 'playboy', 'hustler', 'bangbros', 'venus']
 
@@ -314,7 +325,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
                   if (firstItem) firstItem.focus();
                 }
               }}
-              className="w-full bg-zinc-900 border border-zinc-700/50 rounded-full py-3.5 pl-11 pr-6 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[var(--color-rider-blue)] focus:ring-1 focus:ring-[var(--color-rider-blue)] transition-all shadow-inner"
+              className="nav-item w-full bg-zinc-900 border border-zinc-700/50 rounded-full py-3.5 pl-11 pr-6 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[var(--color-rider-blue)] focus:ring-1 focus:ring-[var(--color-rider-blue)] transition-all shadow-inner"
             />
           </div>
         </div>
@@ -387,7 +398,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
                 ))}
               </>
             ) : (
-              <div className="py-32 flex flex-col items-center justify-center text-center opacity-60">
+              <div className="nav-item py-32 flex flex-col items-center justify-center text-center opacity-60 outline-none" tabIndex={0}>
                 <Video className="w-16 h-16 text-zinc-500 mb-6 drop-shadow-lg" />
                 <h4 className="text-xl font-bold text-white mb-2">Preparando Estante</h4>
                 <p className="text-zinc-400 max-w-sm">Estamos organizando la librería de películas para ti.</p>

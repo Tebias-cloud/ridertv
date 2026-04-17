@@ -80,7 +80,11 @@ function SeriesCategoryRow({ category, account, renderSerieCard, onSeriesLoaded 
         <div className="flex gap-4 sm:gap-6 overflow-x-auto hide-scrollbar pt-4 pb-6 mx-[-1rem] px-[1rem] sm:mx-0 sm:px-0">
           {loading ? (
              [...Array(6)].map((_, j) => (
-                <div key={`skel-series-${category.category_id}-${j}`} className="aspect-[2/3] bg-zinc-900/50 rounded-2xl animate-pulse"></div>
+                <div 
+                  key={`skel-series-${category.category_id}-${j}`} 
+                  className="nav-item aspect-[2/3] bg-zinc-900/50 rounded-2xl animate-pulse outline-none"
+                  tabIndex={0}
+                ></div>
              ))
           ) : error ? (
              <div className="flex items-center gap-3 py-8 px-6 bg-zinc-900/40 rounded-2xl border border-zinc-800 text-zinc-500">
@@ -127,18 +131,25 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
   // Smart TV Navigation
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === 'Backspace') {
-        if (selectedSerie || playingEpisode) {
+      // 27 = Escape, 8 = Backspace, 4 = Android Back
+      if (e.key === 'Escape' || e.key === 'Backspace' || e.keyCode === 8 || e.keyCode === 27) {
+        if (playingEpisode) {
+          e.preventDefault()
+          e.stopPropagation()
+          setPlayingEpisode(null)
+          return
+        }
+        if (selectedSerie) {
           e.preventDefault()
           e.stopPropagation()
           setSelectedSerie(null)
-          setPlayingEpisode(null)
+          return
         }
       }
     }
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [])
+  }, [selectedSerie, playingEpisode])
 
   const [visibleCount, setVisibleCount] = useState(4)
   useEffect(() => {
@@ -262,7 +273,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
                  if (firstItem) firstItem.focus();
                }
              }}
-             className="w-full bg-zinc-900 border border-zinc-800 rounded-full py-3 px-6 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 transition-all shadow-inner"
+             className="nav-item w-full bg-zinc-900 border border-zinc-800 rounded-full py-3 px-6 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 transition-all shadow-inner"
            />
         </div>
       </div>
@@ -316,7 +327,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
                ))}
             </>
           ) : (
-             <div className="py-32 flex flex-col items-center justify-center text-center opacity-60">
+             <div className="nav-item py-32 flex flex-col items-center justify-center text-center opacity-60 outline-none" tabIndex={0}>
                <Clapperboard className="w-16 h-16 text-zinc-500 mb-6 drop-shadow-lg" />
                <h4 className="text-xl font-bold text-white mb-2">Preparando Catálogo</h4>
                <p className="text-zinc-400 max-w-sm">Cargando franquicias disponibles.</p>
