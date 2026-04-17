@@ -28,7 +28,7 @@ export function ExitDialog({ isOpen, onClose, onExit, onLogout }: ExitDialogProp
         <div className="flex flex-col w-full gap-4">
           <button 
             onClick={onExit}
-            className="nav-item w-full py-4 bg-white text-black font-black rounded-2xl flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 outline-none focus:ring-4 focus:ring-white"
+            className="nav-item exit-dialog-item w-full py-4 bg-white text-black font-black rounded-2xl flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 outline-none focus:ring-4 focus:ring-white"
           >
             <Power className="w-5 h-5" />
             Cerrar Aplicación
@@ -36,7 +36,7 @@ export function ExitDialog({ isOpen, onClose, onExit, onLogout }: ExitDialogProp
 
           <button 
             onClick={onLogout}
-            className="nav-item w-full py-4 bg-zinc-800 text-white font-bold rounded-2xl flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 border border-white/5 outline-none focus:ring-4 focus:ring-rose-500"
+            className="nav-item exit-dialog-item w-full py-4 bg-zinc-800 text-white font-bold rounded-2xl flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95 border border-white/5 outline-none focus:ring-4 focus:ring-rose-500"
           >
             <LogOut className="w-5 h-5" />
             Cerrar Sesión
@@ -44,7 +44,7 @@ export function ExitDialog({ isOpen, onClose, onExit, onLogout }: ExitDialogProp
 
           <button 
             onClick={onClose}
-            className="nav-item w-full py-4 text-zinc-500 font-bold hover:text-white transition-colors outline-none"
+            className="nav-item exit-dialog-item w-full py-4 text-zinc-500 font-bold hover:text-white transition-colors outline-none"
           >
             Cancelar
           </button>

@@ -57,45 +57,35 @@ export function SpatialNavProvider({ children }: { children: React.ReactNode }) 
         SpatialNavigation.set({
           rememberSource: true,
           straightOnly: false,
-          straightOverlapThreshold: 0.1, // Más estricto para evitar saltos diagonales
+          straightOverlapThreshold: 0.1,
         })
 
-        // Sección SIDEBAR: Solo accesible desde la izquierda
         SpatialNavigation.add('sidebar', {
           selector: '.sidebar-item',
           enterTo: 'last-focused',
         })
 
-        // Sección CONTENIDO: Galería principal
         SpatialNavigation.add('content', {
           selector: '.nav-item, button:not([disabled]), input, a[href]:not(.sidebar-item)',
           enterTo: 'last-focused',
         })
 
-        // Restricción: Salida del sidebar hacia el contenido
-        SpatialNavigation.set('sidebar', {
-          nextElementByDirection: {
-            right: '@content'
-          }
+        // 🔥 NUEVA SECCIÓN MODO DIÁLOGO (Para el diálogo de salida)
+        SpatialNavigation.add('exit-dialog', {
+          selector: '.exit-dialog-item',
+          restrict: 'self-only',
+          enterTo: 'default-element',
         })
 
-        // 🔥 Escape: Salida del contenido hacia el sidebar (Novedad clave)
-        SpatialNavigation.set('content', {
-          nextElementByDirection: {
-            left: '@sidebar'
-          }
-        })
+        SpatialNavigation.set('sidebar', { nextElementByDirection: { right: '@content' } })
+        SpatialNavigation.set('content', { nextElementByDirection: { left: '@sidebar' } })
 
         SpatialNavigation.makeFocusable()
 
-        // 🔥 UX: Auto-scroll centrado para TV (Optimizado para evitar parpadeos)
         const handleFocused = (e: any) => {
           const element = e.target;
           if (element) {
             const isSidebar = element.classList.contains('sidebar-item');
-            
-            // Si es sidebar, no necesitamos scroll horizontal, solo vertical suave
-            // Si es contenido, queremos centrarlo
             element.scrollIntoView({
               behavior: 'smooth',
               block: 'center',
@@ -122,16 +112,36 @@ export function SpatialNavProvider({ children }: { children: React.ReactNode }) 
     }
   }, [])
 
+  // 🔥 Control de Foco de Diálogo de Salida
   useEffect(() => {
-    // Focus when pathname changes
+    if (typeof window !== 'undefined') {
+       const SpatialNavigation = require('spatial-navigation-js')
+       if (isExitDialogOpen) {
+          try {
+            SpatialNavigation.pause('sidebar')
+            SpatialNavigation.pause('content')
+            SpatialNavigation.focus('exit-dialog')
+          } catch (e) {}
+       } else {
+          try {
+            SpatialNavigation.resume('sidebar')
+            SpatialNavigation.resume('content')
+            SpatialNavigation.focus()
+          } catch (e) {}
+       }
+    }
+  }, [isExitDialogOpen])
+
+  useEffect(() => {
+    // Focus default when pathname changes
     const timer = setTimeout(() => {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && !isExitDialogOpen) {
          const SpatialNavigation = require('spatial-navigation-js')
          try { SpatialNavigation.focus() } catch (e) {}
       }
     }, 800)
     return () => clearTimeout(timer)
-  }, [pathname])
+  }, [pathname, isExitDialogOpen])
 
   return (
     <>

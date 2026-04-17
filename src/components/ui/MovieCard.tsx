@@ -1,5 +1,12 @@
 "use client"
 import { useRouter } from 'next/navigation'
+import { Play, Star, Clock, Calendar } from 'lucide-react'
+
+const upgradeToHttps = (url?: string) => {
+  if (!url) return '';
+  if (url.startsWith('http://')) return url.replace('http://', 'https://');
+  return url;
+};
 
 export function MovieCard({ movie, account }: { movie: any, account: any }) {
   const router = useRouter()
@@ -11,8 +18,6 @@ export function MovieCard({ movie, account }: { movie: any, account: any }) {
     window.location.href = '/player.html'
   }
 
-  const imageUrl = movie.stream_icon ? movie.stream_icon : ''
-
   return (
     <div 
       onClick={handlePlay}
@@ -22,18 +27,22 @@ export function MovieCard({ movie, account }: { movie: any, account: any }) {
     >
       <div className="absolute inset-0 z-10 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus:opacity-100" />
       
-      {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt={movie.name}
-          loading="lazy"
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 group-focus:scale-105"
-        />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center bg-zinc-800">
-          <span className="text-zinc-500 text-xs font-bold uppercase text-center px-4 leading-relaxed tracking-wider">{movie.name}</span>
-        </div>
-      )}
+      <div className="relative aspect-[2/3] overflow-hidden">
+        {movie.stream_icon ? (
+          <img 
+            src={upgradeToHttps(movie.stream_icon)} 
+            alt={movie.name}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 group-focus:scale-110"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x450?text=No+Poster'
+            }}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-zinc-800">
+            <span className="text-zinc-500 text-xs font-bold uppercase text-center px-4 leading-relaxed tracking-wider">{movie.name}</span>
+          </div>
+        )}
+      </div>
 
       {/* Play Button Overlay */}
       <div className="absolute inset-0 z-20 flex items-center justify-center opacity-0 scale-50 transition-all duration-300 delay-75 group-hover:opacity-100 group-hover:scale-100 group-focus:opacity-100 group-focus:scale-100">

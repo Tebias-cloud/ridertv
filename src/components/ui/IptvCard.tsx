@@ -1,6 +1,13 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { Play, Star, Clock, Info } from 'lucide-react'
+
+const upgradeToHttps = (url?: string) => {
+  if (!url) return '';
+  if (url.startsWith('http://')) return url.replace('http://', 'https://');
+  return url;
+};
 
 type Account = {
   id: string
@@ -12,7 +19,7 @@ type Account = {
   expires_at: string
 }
 
-export function IptvCard({ account }: { account: Account }) {
+export function IptvCard({ item, account }: { item: any, account: any }) {
   const router = useRouter()
 
   const handlePlay = () => {
@@ -44,6 +51,18 @@ export function IptvCard({ account }: { account: Account }) {
               <span className="text-xs font-medium text-red-500 uppercase tracking-wider">Suspendido</span>
             </>
           )}
+          {item.stream_icon ? (
+          <img 
+            src={upgradeToHttps(item.stream_icon)} 
+            alt={item.name}
+            className="w-full h-full aspect-[2/3] object-cover transition-transform duration-500 group-hover:scale-110 group-focus:scale-110"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x450?text=No+Poster'
+            }}
+          />
+        ) : (
+          <div />
+        )}
         </div>
       </div>
 

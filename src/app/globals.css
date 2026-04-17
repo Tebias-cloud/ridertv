@@ -12,11 +12,15 @@
   color-scheme: dark;
 }
 
-body {
+html, body {
   background-color: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
-  min-height: 100vh;
+  height: 100%;
+  width: 100%;
+  overflow: hidden !important;
+  margin: 0;
+  padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

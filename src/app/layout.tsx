@@ -31,7 +31,30 @@ export default function RootLayout({
       lang="es"
       className={`${inter.variable} h-full antialiased dark`}
     >
-      <head />
+      <head>
+        {/* NUCLEAR FIX 2.0: Prefetch Killer Script */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            var originalFetch = window.fetch;
+            window.fetch = function(input, init) {
+              if (typeof input === 'string' && (input.includes('_rsc') || input.endsWith('.txt'))) {
+                return Promise.resolve(new Response('', { status: 200, statusText: 'OK' }));
+              }
+              return originalFetch.apply(this, arguments);
+            };
+            var originalXHR = window.XMLHttpRequest.prototype.open;
+            window.XMLHttpRequest.prototype.open = function(method, url) {
+              if (url && (url.includes('_rsc') || url.includes('.txt'))) {
+                this.abort();
+                return;
+              }
+              return originalXHR.apply(this, arguments);
+            };
+            console.log('⚡ [Nuclear Fix] Prefetch Killer Active');
+          })();
+        `}} />
+        <meta httpEquiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+      </head>
       <body className="min-h-full flex flex-col">
         <SpatialNavProvider>
           {children}

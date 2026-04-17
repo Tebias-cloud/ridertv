@@ -1,5 +1,10 @@
-"use client"
 import { useRouter } from 'next/navigation'
+
+const upgradeToHttps = (url?: string) => {
+  if (!url) return '';
+  if (url.startsWith('http://')) return url.replace('http://', 'https://');
+  return url;
+};
 
 export function HeroBanner({ movie, account, overridePlay }: { movie: any, account: any, overridePlay?: () => void }) {
   const router = useRouter()
@@ -24,7 +29,7 @@ export function HeroBanner({ movie, account, overridePlay }: { movie: any, accou
       <div className="absolute inset-0 w-full h-full bg-zinc-950">
         {imageUrl && (
           <img
-            src={imageUrl}
+            src={upgradeToHttps(imageUrl)}
             alt={title}
             className="w-full h-full object-cover object-top opacity-80"
             loading="eager"

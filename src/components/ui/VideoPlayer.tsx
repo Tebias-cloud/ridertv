@@ -13,7 +13,14 @@ interface VideoPlayerProps {
   streamUrl: string
   isLive?: boolean
   onClose?: () => void
+  logoUrl?: string // Added logo prop
 }
+
+const upgradeToHttps = (url?: string) => {
+  if (!url) return '';
+  if (url.startsWith('http://')) return url.replace('http://', 'https://');
+  return url;
+};
 
 function TimeDisplay({ videoRef, isLive }: { videoRef: React.RefObject<HTMLVideoElement | null>, isLive?: boolean }) {
   const timeRef = useRef<HTMLSpanElement>(null)
@@ -255,9 +262,11 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
             });
           }
 
+          const rawUrl = getRawUrl(safeUrl);
+
           await CapacitorVideoPlayer.initPlayer({
             mode: 'fullscreen',
-            url: safeUrl,
+            url: rawUrl,
             playerId: 'rider-fullscreen',
             componentTag: 'capacitor-video-player',
             chromecast: false,
@@ -265,7 +274,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
             isMuted: false,
             headers: {
               'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
-              'Referer': safeUrl.split('/').slice(0, 3).join('/')
+              'Referer': rawUrl.split('/').slice(0, 3).join('/')
             }
           } as any);
           
@@ -424,12 +433,20 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
 
   if (isNativePlatform && loadingNative && !hasFatalError) {
     return (
-      <div className="w-full h-full bg-black flex flex-col items-center justify-center text-white relative z-[100]">
-        <button onClick={() => router.push('/catalog')} className="absolute top-8 right-8 z-[110] p-4 bg-zinc-900/80 rounded-full border border-white/20 text-white">
-          <X className="w-8 h-8" />
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center text-white z-[100] animate-in fade-in duration-500">
+        <button onClick={() => { if (onClose) onClose(); else window.location.href = '/catalog.html'; }} className="absolute top-10 right-10 z-[110] p-5 bg-zinc-900/90 rounded-full border border-white/20 text-white shadow-2xl hover:scale-110 active:scale-95 transition-all">
+          <X className="w-10 h-10" />
         </button>
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-rose-500 mb-6"></div>
-        <p className="font-black tracking-[0.2em] text-lg uppercase animate-pulse">Iniciando Motor Nativo...</p>
+        <div className="relative">
+          <div className="animate-spin rounded-full h-24 w-24 border-b-4 border-rose-500 mb-8 shadow-[0_0_30px_rgba(244,63,94,0.4)]"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+             <Play className="w-8 h-8 text-rose-500 animate-pulse" fill="currentColor" />
+          </div>
+        </div>
+        <p className="font-black tracking-[0.3em] text-2xl uppercase animate-pulse bg-clip-text text-transparent bg-gradient-to-r from-zinc-200 to-zinc-500">
+          Sintonizando...
+        </p>
+        <p className="text-zinc-600 text-sm mt-4 font-bold tracking-widest uppercase opacity-50">Motor Nativo Rider TV</p>
       </div>
     );
   }

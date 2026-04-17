@@ -8,6 +8,12 @@ import { useFavorites } from '@/hooks/useFavorites'
 import { VirtualRow } from '@/components/ui/VirtualRow'
 import { fetchIptv, getBaseUrl } from '@/lib/iptv'
 
+const upgradeToHttps = (url?: string) => {
+  if (!url) return '';
+  if (url.startsWith('http://')) return url.replace('http://', 'https://');
+  return url;
+};
+
 // ==========================
 // COMPONENTE: LIVE CATEGORY ROW (Lazy Loading)
 // ==========================
@@ -193,7 +199,7 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
        <div className="flex-1 w-full bg-black/40 relative group-hover:bg-black/20 transition-colors overflow-hidden">
          <div className="absolute inset-0 p-4 flex items-center justify-center">
             {chan.stream_icon ? (
-              <img src={chan.stream_icon} alt={chan.name} loading="lazy" onError={(e) => e.currentTarget.style.display = 'none'} className="w-full h-full object-contain drop-shadow-xl group-hover:scale-110 transition-transform duration-500" />
+              <img src={upgradeToHttps(chan.stream_icon)} alt={chan.name} loading="lazy" onError={(e) => e.currentTarget.style.display = 'none'} className="w-full h-full object-contain drop-shadow-xl group-hover:scale-110 transition-transform duration-500" />
            ) : (
              <Tv className="w-12 h-12 text-zinc-600 group-hover:scale-110 transition-transform duration-500" />
            )}
@@ -333,7 +339,7 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
                  <div className="flex gap-4 items-center w-full">
                    {selectedChannel.stream_icon && (
                       <div className="w-12 h-12 bg-black/50 rounded-lg p-2 flex items-center justify-center border border-white/10 shrink-0">
-                         <img src={selectedChannel.stream_icon} alt="icon" className="w-full h-full object-contain" />
+                         <img src={upgradeToHttps(selectedChannel.stream_icon)} alt="icon" className="w-full h-full object-contain" />
                       </div>
                    )}
                    <div className="overflow-hidden">
