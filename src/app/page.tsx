@@ -24,7 +24,7 @@ function LoginForm() {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
         const role = session.user?.user_metadata?.role
-        router.replace(role === 'admin' ? '/admin' : '/catalog')
+        window.location.href = role === 'admin' ? '/admin.html' : '/catalog.html'
       }
     }
     checkSession()
@@ -67,7 +67,7 @@ function LoginForm() {
       } else {
         // Redirección inteligente basada en Rol
         const role = data.user?.user_metadata?.role
-        router.replace(role === 'admin' ? '/admin' : '/catalog')
+        window.location.href = role === 'admin' ? '/admin.html' : '/catalog.html'
       }
     } catch (err: any) {
       setErrorMsg('Error de conexión con Rider TV. Reintenta en unos segundos.')

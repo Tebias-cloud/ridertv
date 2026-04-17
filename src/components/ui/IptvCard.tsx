@@ -19,7 +19,7 @@ export function IptvCard({ account }: { account: Account }) {
     localStorage.setItem('iptv_username', account.username)
     localStorage.setItem('iptv_password', account.password)
     localStorage.setItem('iptv_portal_url', account.portal_url)
-    router.push('/player')
+    window.location.href = '/player.html'
   }
 
   return (

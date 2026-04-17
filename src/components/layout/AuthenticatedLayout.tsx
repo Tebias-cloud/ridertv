@@ -16,7 +16,7 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
-        router.push('/')
+        window.location.href = '/index.html'
         return
       }
 

@@ -214,7 +214,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
         if (onClose) {
           onClose();
         } else {
-          router.push('/catalog');
+          window.location.href = '/catalog.html';
         }
       });
     };
@@ -233,14 +233,14 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
               if (isExiting) return;
               isExiting = true;
               if (onClose) onClose();
-              else router.push('/catalog');
+              else window.location.href = '/catalog.html';
             });
 
             ;(CapacitorVideoPlayer as any).addListener('jeepCapVideoPlayerEnded', () => {
               if (isExiting) return;
               isExiting = true;
               if (onClose) onClose();
-              else router.push('/catalog');
+              else window.location.href = '/catalog.html';
             });
             
             ;(CapacitorVideoPlayer as any).addListener('jeepCapVideoPlayerError', (data: any) => {
@@ -250,7 +250,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
               CapacitorVideoPlayer.stopAllPlayers().catch(() => {});
               setTimeout(() => {
                 if (onClose) onClose();
-                else router.push('/catalog');
+                else window.location.href = '/catalog.html';
               }, 2000);
             });
           }
@@ -437,7 +437,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
   return (
     <div ref={containerRef} className={`relative w-full h-full bg-black flex items-center justify-center overflow-hidden ${!showControls && isPlaying ? 'cursor-none' : 'cursor-default'}`}>
       {!requiresInteraction && (
-        <button onClick={() => { if (onClose) onClose(); else router.push('/catalog'); }} className={`nav-item absolute top-4 right-4 z-[60] p-2 md:p-3 bg-black/40 hover:bg-black/80 backdrop-blur-md rounded-full text-white border border-white/10 shadow-lg transition-all hover:scale-110 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        <button onClick={() => { if (onClose) onClose(); else window.location.href = '/catalog.html'; }} className={`nav-item absolute top-4 right-4 z-[60] p-2 md:p-3 bg-black/40 hover:bg-black/80 backdrop-blur-md rounded-full text-white border border-white/10 shadow-lg transition-all hover:scale-110 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
           <X className="w-5 h-5 md:w-6 md:h-6" />
         </button>
       )}
@@ -459,7 +459,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
              <MonitorX className="w-16 h-16 text-rose-500 mb-4 animate-pulse" />
              <h3 className="text-xl font-black text-white mb-2">Señal Interrumpida</h3>
              <p className="text-zinc-400 text-sm mb-6">Este contenido no está transmitiendo en este momento.</p>
-             <button onClick={() => { if (onClose) onClose(); else router.push('/catalog'); }} className="bg-white text-black font-bold w-full py-3 rounded-xl hover:scale-105 transition-transform">Ver otro canal</button>
+             <button onClick={() => { if (onClose) onClose(); else window.location.href = '/catalog.html'; }} className="bg-white text-black font-bold w-full py-3 rounded-xl hover:scale-105 transition-transform">Ver otro canal</button>
            </div>
         </div>
       ) : errorMsg && !hasFatalError ? (

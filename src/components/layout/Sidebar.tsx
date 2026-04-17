@@ -32,10 +32,10 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
   }, [])
 
   const links = [
-    { name: 'Inicio / Descubrir', href: '/catalog', icon: Home },
-    { name: 'TV en Vivo', href: '/live', icon: Tv },
-    { name: 'Películas (VOD)', href: '/catalog', icon: Film },
-    { name: 'Series', href: '/series', icon: Clapperboard },
+    { name: 'Inicio / Descubrir', href: '/catalog.html', icon: Home },
+    { name: 'TV en Vivo', href: '/live.html', icon: Tv },
+    { name: 'Películas (VOD)', href: '/catalog.html', icon: Film },
+    { name: 'Series', href: '/series.html', icon: Clapperboard },
   ]
 
   // Add Admin if web and authorized
@@ -97,7 +97,7 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
                 const supabase = createClient()
                 await supabase.auth.signOut()
                 localStorage.clear()
-                window.location.href = '/'
+                window.location.href = '/index.html'
              }}
              className="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl text-zinc-500 hover:text-red-500 hover:bg-red-500/10 focus:bg-red-500/20 focus:text-red-500 transition-all duration-300 font-medium group outline-none"
            >

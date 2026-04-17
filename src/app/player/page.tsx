@@ -50,7 +50,7 @@ export default function PlayerPage() {
     const portal_url = localStorage.getItem('iptv_portal_url')
 
     if (!username || !password || !portal_url) {
-      router.push('/catalog')
+      window.location.href = '/catalog.html'
       return
     }
 
@@ -137,7 +137,7 @@ export default function PlayerPage() {
         
         {/* Header estricto */}
         <div className="h-16 flex items-center shrink-0 px-4 border-b border-zinc-800 bg-zinc-900 z-20 shadow-sm shadow-zinc-950/20">
-          <button onClick={() => router.push('/catalog')} className="text-zinc-400 hover:text-white mr-3 transition-colors" title="Volver al Catálogo">
+          <button onClick={() => { window.location.href = '/catalog.html' }} className="text-zinc-400 hover:text-white mr-3 transition-colors" title="Volver al Catálogo">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <Logo className="scale-75 origin-left" />
@@ -256,7 +256,7 @@ export default function PlayerPage() {
         <VideoPlayer 
           key={currentStreamUrl} 
           streamUrl={currentStreamUrl} 
-          onClose={() => router.push('/catalog')}
+          onClose={() => { window.location.href = '/catalog.html' }}
         />
       </main>
 

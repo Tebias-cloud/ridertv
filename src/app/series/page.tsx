@@ -43,7 +43,7 @@ export default function SeriesPage() {
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
-        router.push('/')
+        window.location.href = '/index.html'
         return
       }
 
