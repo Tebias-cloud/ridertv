@@ -30,13 +30,18 @@ export async function fetchIptv(url: string, options: RequestInit = {}) {
   if (!isNative) {
     // On web, use the local proxy
     finalUrl = `/api/proxy?url=${encodeURIComponent(url)}`
+  } else if (!url.startsWith('http')) {
+    // FALLBACK: Si por alguna razón la URL es relativa en nativo, 
+    // Capacitor intentará cargarla de https://localhost, lo cual fallará.
+    // Aunque esto no debería pasar con getBaseUrl, agregamos seguridad.
+    console.warn("⚠️ URL de IPTV no absoluta detectada en Nativo:", url)
   }
 
   const response = await fetch(finalUrl, {
     ...options,
     headers: {
       ...options.headers,
-      'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18', // Identidad unificada para evitar bloqueos
+      'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
     }
   })
 
@@ -58,5 +63,10 @@ export async function fetchIptv(url: string, options: RequestInit = {}) {
  * Normalizes IPTV URLs (handles trailing slashes)
  */
 export function getBaseUrl(portalUrl: string) {
-  return portalUrl.endsWith('/') ? portalUrl.slice(0, -1) : portalUrl
+  if (!portalUrl) return ""
+  let url = portalUrl.trim()
+  if (url.endsWith('/')) url = url.slice(0, -1)
+  // Asegurar protocolo para evitar que Capacitor crea que es una ruta local
+  if (!url.startsWith('http')) url = `http://${url}`
+  return url
 }

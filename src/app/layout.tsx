@@ -12,6 +12,13 @@ export const metadata: Metadata = {
   description: "Plataforma de streaming ultra-rápida",
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1.0,
+  maximumScale: 1.0,
+  userScalable: false,
+};
+
 import { SpatialNavProvider } from '@/components/layout/SpatialNavProvider'
 
 export default function RootLayout({

@@ -96,7 +96,7 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
              onClick={async () => {
                 const supabase = createClient()
                 await supabase.auth.signOut()
-                sessionStorage.clear()
+                localStorage.clear()
                 window.location.href = '/'
              }}
              className="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl text-zinc-500 hover:text-red-500 hover:bg-red-500/10 focus:bg-red-500/20 focus:text-red-500 transition-all duration-300 font-medium group outline-none"

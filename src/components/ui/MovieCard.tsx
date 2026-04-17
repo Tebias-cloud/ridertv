@@ -5,9 +5,9 @@ export function MovieCard({ movie, account }: { movie: any, account: any }) {
   const router = useRouter()
 
   const handlePlay = () => {
-    sessionStorage.setItem('iptv_username', account.username)
-    sessionStorage.setItem('iptv_password', account.password)
-    sessionStorage.setItem('iptv_portal_url', account.portal_url)
+    localStorage.setItem('iptv_username', account.username)
+    localStorage.setItem('iptv_password', account.password)
+    localStorage.setItem('iptv_portal_url', account.portal_url)
     router.push('/player')
   }
 

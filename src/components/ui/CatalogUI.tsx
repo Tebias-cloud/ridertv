@@ -447,6 +447,7 @@ export function CatalogUI({ categories, heroMovie, validAccounts, activeAccount 
                     <VideoPlayer
                       key={playingMovie.stream_id || playingMovie.id}
                       streamUrl={formatCompatibleUrl(`${activeAccount.portal_url.replace(/\/$/, '')}/movie/${activeAccount.username}/${activeAccount.password}/${playingMovie.stream_id || playingMovie.id}.${playingMovie.container_extension || 'mp4'}`)}
+                      onClose={() => setPlayingMovie(null)}
                     />
                   );
                 })()}

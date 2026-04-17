@@ -5,6 +5,7 @@ import { VideoPlayer } from '@/components/ui/VideoPlayer'
 import { Logo } from '@/components/ui/Logo'
 import { ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { fetchIptv, getBaseUrl } from '@/lib/iptv'
 
 // Interfaces esperadas
 interface Stream {
@@ -44,9 +45,9 @@ export default function PlayerPage() {
   const [account, setAccount] = useState<{username: string, password: string, portal_url: string} | null>(null)
 
   useEffect(() => {
-    const username = sessionStorage.getItem('iptv_username')
-    const password = sessionStorage.getItem('iptv_password')
-    const portal_url = sessionStorage.getItem('iptv_portal_url')
+    const username = localStorage.getItem('iptv_username')
+    const password = localStorage.getItem('iptv_password')
+    const portal_url = localStorage.getItem('iptv_portal_url')
 
     if (!username || !password || !portal_url) {
       router.push('/catalog')
@@ -62,24 +63,17 @@ export default function PlayerPage() {
     async function fetchData() {
       setLoading(true)
       try {
-        const baseIpTvUrl = (account!.portal_url.endsWith('/') ? account!.portal_url.slice(0, -1) : account!.portal_url)
+        const baseIpTvUrl = getBaseUrl(account!.portal_url)
         const actionStreams = viewMode === 'live' ? 'get_live_streams' : 'get_vod_streams'
         const actionCategories = viewMode === 'live' ? 'get_live_categories' : 'get_vod_categories'
 
         const authQuery = `username=${account!.username}&password=${account!.password}`
 
-        // Fetch paralelo de Categorias y Canales
-        const [channelsRes, categoriesRes] = await Promise.all([
-          fetch(`${baseIpTvUrl}/player_api.php?${authQuery}&action=${actionStreams}`),
-          fetch(`${baseIpTvUrl}/player_api.php?${authQuery}&action=${actionCategories}`)
+        // Fetch paralelo de Categorias y Canales usando fetchIptv (Seguro para Native/Web)
+        const [channelsData, categoriesData] = await Promise.all([
+          fetchIptv(`${baseIpTvUrl}/player_api.php?${authQuery}&action=${actionStreams}`),
+          fetchIptv(`${baseIpTvUrl}/player_api.php?${authQuery}&action=${actionCategories}`)
         ])
-
-        if (!channelsRes.ok || !categoriesRes.ok) {
-          throw new Error('Error al cargar datos del upstream IPTV')
-        }
-        
-        const channelsData = await channelsRes.json()
-        const categoriesData = await categoriesRes.json()
         
         let loadedChannels: Stream[] = []
 
@@ -154,7 +148,7 @@ export default function PlayerPage() {
           <div className="flex bg-zinc-900 rounded-lg p-1 border border-zinc-800/60">
             <button
               onClick={() => setViewMode('live')}
-              className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
+              className={`nav-item flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
                 viewMode === 'live' 
                   ? 'bg-[var(--color-rider-blue)] text-white shadow-md' 
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
@@ -164,7 +158,7 @@ export default function PlayerPage() {
             </button>
             <button
               onClick={() => setViewMode('vod')}
-              className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
+              className={`nav-item flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
                 viewMode === 'vod' 
                   ? 'bg-[var(--color-rider-blue)] text-white shadow-md' 
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
@@ -181,7 +175,7 @@ export default function PlayerPage() {
             <div className="flex overflow-x-auto custom-scrollbar px-3 py-3 gap-2 hide-scrollbar">
               <button 
                 onClick={() => setActiveCategoryId('all')}
-                className={`flex-none px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors border
+                className={`nav-item flex-none px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors border
                 ${activeCategoryId === 'all' 
                   ? 'bg-[var(--color-rider-blue)] text-white border-transparent' 
                   : 'bg-zinc-800/50 text-zinc-400 border-zinc-700/50 hover:bg-zinc-800 hover:text-zinc-100'
@@ -193,7 +187,7 @@ export default function PlayerPage() {
                 <button 
                   key={`${cat.category_id}-${idx}`}
                   onClick={() => setActiveCategoryId(cat.category_id)}
-                  className={`flex-none px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors border
+                  className={`nav-item flex-none px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors border
                   ${activeCategoryId === cat.category_id 
                     ? 'bg-[var(--color-rider-blue)] text-white border-transparent' 
                     : 'bg-zinc-800/50 text-zinc-400 border-zinc-700/50 hover:bg-zinc-800 hover:text-zinc-100'
@@ -235,7 +229,7 @@ export default function PlayerPage() {
                   <li key={`${chan.stream_id}-${idx}`}>
                     <button
                       onClick={() => setCurrentChannel(chan)}
-                      className={`w-full text-left px-5 py-3.5 text-sm transition-colors border-b border-zinc-800/40 flex items-center gap-3
+                      className={`sidebar-item w-full text-left px-5 py-3.5 text-sm transition-colors border-b border-zinc-800/40 flex items-center gap-3
                         ${isActive 
                           ? 'bg-[var(--color-rider-blue)]/10 text-white font-bold border-l-4 border-l-[var(--color-rider-blue)]' 
                           : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-zinc-200 border-l-4 border-l-transparent'
@@ -259,7 +253,11 @@ export default function PlayerPage() {
 
       {/* Main Container (75%) */}
       <main className="flex-1 bg-black flex flex-col items-center justify-center h-full relative">
-        <VideoPlayer key={currentStreamUrl} streamUrl={currentStreamUrl} />
+        <VideoPlayer 
+          key={currentStreamUrl} 
+          streamUrl={currentStreamUrl} 
+          onClose={() => router.push('/catalog')}
+        />
       </main>
 
     </div>

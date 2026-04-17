@@ -12,6 +12,7 @@ import { App } from '@capacitor/app'
 interface VideoPlayerProps {
   streamUrl: string
   isLive?: boolean
+  onClose?: () => void
 }
 
 function TimeDisplay({ videoRef, isLive }: { videoRef: React.RefObject<HTMLVideoElement | null>, isLive?: boolean }) {
@@ -140,7 +141,19 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (!videoRef.current) return
       
-      // Toggle play with Enter (Native TV OK button)
+      const activeElement = document.activeElement;
+      const isNavFocus = activeElement?.classList.contains('nav-item');
+
+      if (e.key.toLowerCase() === 'm') {
+        e.preventDefault()
+        videoRef.current.muted = !videoRef.current.muted
+        setIsMuted(videoRef.current.muted)
+        if (!videoRef.current.muted && videoRef.current.volume === 0) setVolume(1)
+        return;
+      }
+
+      if (isNavFocus) return;
+
       if (e.key === 'Enter') {
         e.preventDefault()
         if (videoRef.current.paused) {
@@ -148,23 +161,17 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
           if (p !== undefined) p.catch(err => { if (err.name !== 'AbortError') console.error(err) })
         }
         else videoRef.current.pause()
+        setShowControls(true);
       }
-      // Toggle mute with "m" or "M"
-      if (e.key.toLowerCase() === 'm') {
-        e.preventDefault()
-        videoRef.current.muted = !videoRef.current.muted
-        setIsMuted(videoRef.current.muted)
-        if (!videoRef.current.muted && videoRef.current.volume === 0) setVolume(1)
-      }
-      // Scrubbing with D-Pad
+
       if (!isLive) {
         if (e.key === 'ArrowRight') {
-          e.preventDefault()
           videoRef.current.currentTime = Math.min(videoRef.current.currentTime + 10, videoRef.current.duration || Infinity)
+          setShowControls(true);
         }
         if (e.key === 'ArrowLeft') {
-          e.preventDefault()
           videoRef.current.currentTime = Math.max(videoRef.current.currentTime - 10, 0)
+          setShowControls(true);
         }
       }
     }
@@ -176,16 +183,11 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     const video = videoRef.current
     if (!video || !streamUrl) return
     
-    // 🔥 Estabilidad: Bypass del Interceptor de Capacitor
-    // CapacitorHttp rewrite URLs para manejar CORS/Cookies, pero ExoPlayer falla
-    // si recibe una URL de localhost/_capacitor_http_interceptor_.
-    // Extraemos la URL original (raw) para el motor nativo.
     const getRawUrl = (url: string): string => {
       if (typeof url !== 'string') return url;
       if (url.includes('_capacitor_http_interceptor_')) {
         try {
           const urlObj = new URL(url);
-          // Capacitor suele usar 'url' como parámetro del interceptor
           const raw = urlObj.searchParams.get('url');
           if (raw) return decodeURIComponent(raw);
         } catch (e) {
@@ -196,27 +198,24 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     };
 
     let safeUrl = getRawUrl(streamUrl);
-
-    console.log("🔗 URL del stream solicitada (Bypass Interceptor):", safeUrl)
     setErrorMsg(null)
     setHasFatalError(false)
     setHlsLevels([])
     setCurrentLevel(-1)
 
-    // ==========================================
-    // INTEGRACIÓN NATIVA (ANDROID TV / MOBILE)
-    // ==========================================
     const isNativePlatform = Capacitor.isNativePlatform();
-    const VLC_USER_AGENT = 'VLC/3.0.18 LibVLC/3.0.18';
 
     let backListener: any = null;
     const setupBackListener = async () => {
       backListener = await App.addListener('backButton', () => {
-        console.log("Back button pressed, stopping native player...");
         if (isNativePlatform) {
           CapacitorVideoPlayer.stopAllPlayers().catch(() => {});
         }
-        router.push('/catalog');
+        if (onClose) {
+          onClose();
+        } else {
+          router.push('/catalog');
+        }
       });
     };
     setupBackListener();
@@ -227,29 +226,32 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
       const initNative = async () => {
         setLoadingNative(true);
         try {
-          // Escuchar eventos ANTES de inicializar para evitar pérdida de señal o errores de timing
           if ((CapacitorVideoPlayer as any).addListener) {
             ;(CapacitorVideoPlayer as any).removeAllListeners?.().catch(() => {});
             
             ;(CapacitorVideoPlayer as any).addListener('jeepCapVideoPlayerExit', () => {
               if (isExiting) return;
               isExiting = true;
-              router.push('/catalog');
+              if (onClose) onClose();
+              else router.push('/catalog');
             });
 
             ;(CapacitorVideoPlayer as any).addListener('jeepCapVideoPlayerEnded', () => {
               if (isExiting) return;
               isExiting = true;
-              router.push('/catalog');
+              if (onClose) onClose();
+              else router.push('/catalog');
             });
             
-            // Panic Exit: Error listener para el motor nativo
             ;(CapacitorVideoPlayer as any).addListener('jeepCapVideoPlayerError', (data: any) => {
               console.error("Native Player Error Signal:", data);
               setErrorMsg("Error fatal en el motor nativo. Reintentando...");
               setHasFatalError(true);
               CapacitorVideoPlayer.stopAllPlayers().catch(() => {});
-              setTimeout(() => router.push('/catalog'), 2000);
+              setTimeout(() => {
+                if (onClose) onClose();
+                else router.push('/catalog');
+              }, 2000);
             });
           }
 
@@ -258,30 +260,20 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
             url: safeUrl,
             playerId: 'rider-fullscreen',
             componentTag: 'capacitor-video-player',
-            chromecast: false, // Desactivar para evitar crash de CastContext en Android TV
-            volume: 1.0,      // Forzar volumen al máximo
-            isMuted: false,   // Asegurar que no inicie silenciado
+            chromecast: false,
+            volume: 1.0,
+            isMuted: false,
             headers: {
-              'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18', // UA más estandarizado para bypass de servidores IPTV
-              'Referer': safeUrl.split('/').slice(0, 3).join('/') // Referer base del dominio
+              'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
+              'Referer': safeUrl.split('/').slice(0, 3).join('/')
             }
           } as any);
-
-          // Forzado de volumen adicional para asegurar que el motor de audio nativo se active
-          if ((CapacitorVideoPlayer as any).setVolume) {
-            await (CapacitorVideoPlayer as any).setVolume({
-              playerId: 'rider-fullscreen',
-              volume: 1.0
-            });
-          }
           
           setLoadingNative(false);
         } catch (err) {
-          console.error("Fallo crítico al iniciar CapacitorVideoPlayer:", err);
           setErrorMsg("No se pudo iniciar el motor nativo. Regresando...");
           setHasFatalError(true);
           setLoadingNative(false);
-          // Destrucción total y regreso preventivo
           CapacitorVideoPlayer.stopAllPlayers().catch(() => {});
           setTimeout(() => router.push('/catalog'), 2500);
         }
@@ -299,10 +291,7 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
       };
     }
 
-    // ==========================================
-    // INTEGRACIÓN WEB (HTML5 / HLS.js)
-    // ==========================================
-    if (isNativePlatform) return; // 🔥 GUARDIA CRÍTICA: No inicializar lógica web en nativo
+    if (isNativePlatform) return;
 
     const webVideo = videoRef.current
     if (!webVideo) return
@@ -314,19 +303,15 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
         if (error.name === 'NotAllowedError' || (error.message && error.message.includes('interact'))) {
           setRequiresInteraction(true)
           setIsPlaying(false)
-        } else if (error.name !== 'AbortError') {
-          console.error(error)
         }
       })
     }
 
     const handleVideoError = () => {
-      console.error('❌ Video Player Native Error:', webVideo.error)
       setErrorMsg(`Error nativo de reproducción. Código: ${webVideo.error?.code || 'Desconocido'}`)
     }
     webVideo.addEventListener('error', handleVideoError)
     
-    // Sync React state with video native state
     const handlePlay = () => setIsPlaying(true)
     const handlePause = () => setIsPlaying(false)
     webVideo.addEventListener('play', handlePlay)
@@ -346,29 +331,18 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
       const isIOS = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
 
       if (Hls.isSupported() && !isIOS) {
-        // Prioridad total a HLS.js en Android/PC (El nativo suele fallar y arrojar Error 4 en TV WebViews si Capacitor falla o es navegador)
         hls = new Hls({
           maxBufferSize: 0,
           maxBufferLength: 30,
           enableWorker: true,
           lowLatencyMode: true,
-          liveSyncDurationCount: 3,
-          liveMaxLatencyDurationCount: 10,
-          manifestLoadingTimeOut: 10000,
-          fragLoadingTimeOut: 20000,
         })
         
-        let mediaRecovered = false;
         hls.on(Hls.Events.ERROR, (event, data) => {
           if (data.fatal) {
-            if ((data.details === 'fragParsingError' || data.type === Hls.ErrorTypes.MEDIA_ERROR) && !mediaRecovered) {
-              mediaRecovered = true;
-              hls.recoverMediaError()
-            } else {
-              setErrorMsg('Error al cargar el stream. Posible bloqueo de red o fuente inactiva.')
-              setHasFatalError(true)
-              hls.destroy()
-            }
+            hls.destroy()
+            setErrorMsg('Error al cargar el stream.')
+            setHasFatalError(true)
           }
         })
         
@@ -383,8 +357,6 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
           playVideo()
         })
         hlsRef.current = hls
-      } else if (webVideo.canPlayType('application/vnd.apple.mpegurl')) {
-        playNativeUrl()
       } else {
         playNativeUrl()
       }
@@ -403,9 +375,8 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
         webVideo.load()
       }
     }
-  }, [streamUrl])
+  }, [streamUrl, router])
 
-  // Volume Effect
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.volume = volume
@@ -413,7 +384,6 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     }
   }, [volume, isMuted])
 
-  // Quality Selection Handler
   const changeQuality = (levelIndex: number) => {
     if (hlsRef.current) {
       hlsRef.current.currentLevel = levelIndex
@@ -422,21 +392,14 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     }
   }
 
-  // Custom Controls Handlers
   const togglePlay = () => {
     if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause()
-      } else {
-        const p = videoRef.current.play()
-        if (p !== undefined) p.catch(err => { if (err.name !== 'AbortError') console.error(err) })
-      }
+      if (isPlaying) videoRef.current.pause()
+      else videoRef.current.play().catch(() => {})
     }
   }
 
-  const toggleMute = () => {
-    setIsMuted(!isMuted)
-  }
+  const toggleMute = () => setIsMuted(!isMuted)
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVol = parseFloat(e.target.value)
@@ -447,20 +410,13 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
 
   const toggleFullscreen = () => {
     if (!containerRef.current) return
-    if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable full-screen mode: ${err.message}`)
-      })
-    } else {
-      document.exitFullscreen()
-    }
+    if (!document.fullscreenElement) containerRef.current.requestFullscreen().catch(() => {})
+    else document.exitFullscreen()
   }
 
   const toggleSpeed = () => {
     const nextSpeed = playbackRate === 1 ? 1.25 : playbackRate === 1.25 ? 1.5 : playbackRate === 1.5 ? 2 : 1
-    if (videoRef.current) {
-      videoRef.current.playbackRate = nextSpeed
-    }
+    if (videoRef.current) videoRef.current.playbackRate = nextSpeed
     setPlaybackRate(nextSpeed)
   }
 
@@ -469,52 +425,28 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
   if (isNativePlatform && loadingNative && !hasFatalError) {
     return (
       <div className="w-full h-full bg-black flex flex-col items-center justify-center text-white relative z-[100]">
-        <button 
-           onClick={() => router.push('/catalog')}
-           className="absolute top-8 right-8 z-[110] p-4 bg-zinc-900/80 rounded-full border border-white/20 text-white"
-        >
+        <button onClick={() => router.push('/catalog')} className="absolute top-8 right-8 z-[110] p-4 bg-zinc-900/80 rounded-full border border-white/20 text-white">
           <X className="w-8 h-8" />
         </button>
         <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-rose-500 mb-6"></div>
         <p className="font-black tracking-[0.2em] text-lg uppercase animate-pulse">Iniciando Motor Nativo...</p>
-        <p className="text-zinc-500 text-sm mt-2">{isLive ? 'Sintonizando Señal EN VIVO...' : 'Preparando VOD de alta fidelidad...'}</p>
       </div>
     );
   }
 
   return (
-    <div 
-      ref={containerRef}
-      className={`relative w-full h-full bg-black flex items-center justify-center overflow-hidden ${!showControls && isPlaying ? 'cursor-none' : 'cursor-default'}`}
-    >
-      {/* Botón Flotante Volver / Cerrar */}
+    <div ref={containerRef} className={`relative w-full h-full bg-black flex items-center justify-center overflow-hidden ${!showControls && isPlaying ? 'cursor-none' : 'cursor-default'}`}>
       {!requiresInteraction && (
-        <button 
-          onClick={() => router.push('/catalog')}
-          className={`absolute top-4 right-4 z-[60] p-2 md:p-3 bg-black/40 hover:bg-black/80 backdrop-blur-md rounded-full text-white border border-white/10 shadow-lg transition-all hover:scale-110 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-          title="Volver al Catálogo"
-        >
+        <button onClick={() => { if (onClose) onClose(); else router.push('/catalog'); }} className={`nav-item absolute top-4 right-4 z-[60] p-2 md:p-3 bg-black/40 hover:bg-black/80 backdrop-blur-md rounded-full text-white border border-white/10 shadow-lg transition-all hover:scale-110 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
           <X className="w-5 h-5 md:w-6 md:h-6" />
         </button>
       )}
 
       {requiresInteraction && (
-        <div 
-          className="absolute inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-md cursor-pointer transition-opacity"
-          onClick={() => {
-            if (videoRef.current) {
-              const p = videoRef.current.play()
-              if (p !== undefined) p.catch(err => { if (err.name !== 'AbortError') console.error(err) })
-              setRequiresInteraction(false)
-              setIsPlaying(true)
-            }
-          }}
-        >
+        <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-md cursor-pointer" onClick={() => { if (videoRef.current) { videoRef.current.play(); setRequiresInteraction(false); setIsPlaying(true); } }}>
           <button className="flex flex-col items-center justify-center group">
-             <div className="flex items-center justify-center w-24 h-24 rounded-full bg-[var(--color-rider-blue)]/20 border border-[var(--color-rider-blue)]/50 shadow-[0_0_40px_rgba(37,99,235,0.4)] hover:scale-105 transition-transform backdrop-blur-md mb-4 group-hover:bg-[var(--color-rider-blue)]/40">
-               <svg className="w-10 h-10 ml-2 text-white" viewBox="0 0 24 24" fill="currentColor">
-                 <path d="M8 5v14l11-7z" />
-               </svg>
+             <div className="flex items-center justify-center w-24 h-24 rounded-full bg-[var(--color-rider-blue)]/20 border border-[var(--color-rider-blue)]/50 shadow-[0_0_40px_rgba(37,99,235,0.4)] hover:scale-105 transition-transform backdrop-blur-md mb-4">
+               <Play className="w-10 h-10 ml-2 text-white" fill="currentColor" />
              </div>
              <span className="text-white font-bold tracking-widest text-sm uppercase opacity-80 group-hover:opacity-100">Click para Iniciar Sonido</span>
           </button>
@@ -522,190 +454,80 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
       )}
 
       {hasFatalError ? (
-        <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-xl transition-all duration-500 animate-in fade-in p-4">
-           <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-[280px] sm:max-w-xs text-center backdrop-blur-2xl mx-auto">
-             <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mb-4 shadow-inner ring-1 ring-rose-500/20">
-               <MonitorX className="w-8 h-8 text-rose-500 animate-pulse drop-shadow-md" />
-             </div>
-             <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight mb-2">Señal Interrumpida</h3>
-             <p className="text-zinc-400 text-xs sm:text-sm font-medium leading-snug mb-6">
-               Este canal o contenido no está transmitiendo en este momento. Por favor, intenta con otro.
-             </p>
-             <button 
-               onClick={() => router.push('/catalog')}
-               className="bg-white/10 hover:bg-white hover:text-black border border-white/20 hover:scale-105 active:scale-95 transition-all text-sm font-bold w-full py-2.5 rounded-xl drop-shadow-lg flex items-center justify-center gap-2"
-             >
-               Ver otro canal
-             </button>
+        <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-xl p-4">
+           <div className="bg-zinc-900/80 border border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center shadow-2xl w-full max-w-xs text-center backdrop-blur-2xl">
+             <MonitorX className="w-16 h-16 text-rose-500 mb-4 animate-pulse" />
+             <h3 className="text-xl font-black text-white mb-2">Señal Interrumpida</h3>
+             <p className="text-zinc-400 text-sm mb-6">Este contenido no está transmitiendo en este momento.</p>
+             <button onClick={() => { if (onClose) onClose(); else router.push('/catalog'); }} className="bg-white text-black font-bold w-full py-3 rounded-xl hover:scale-105 transition-transform">Ver otro canal</button>
            </div>
         </div>
       ) : errorMsg && !hasFatalError ? (
-        <div className="absolute inset-0 flex items-center justify-center text-red-500 bg-zinc-950 px-4 text-center z-50">
-          {errorMsg}
-        </div>
+        <div className="absolute inset-0 flex items-center justify-center text-red-500 bg-zinc-950 px-4 text-center z-50">{errorMsg}</div>
       ) : !streamUrl ? (
-        <div className="absolute inset-0 flex items-center justify-center text-zinc-600 z-50">
-          Selecciona un canal para reproducir
-        </div>
+        <div className="absolute inset-0 flex items-center justify-center text-zinc-600 z-50">Selecciona un canal</div>
       ) : (
         <>
-          {/* Solo renderizar el video web si NO estamos en plataforma nativa */}
           {!isNativePlatform && (
-            <video
-              ref={videoRef}
-              onClick={togglePlay}
-              controls={false}
-              className="w-full h-full object-contain relative z-[40] cursor-pointer"
-              autoPlay
-              playsInline
-              muted={isMuted}
-              style={{ backgroundColor: '#000' }}
-            />
+            <video ref={videoRef} onClick={togglePlay} className="w-full h-full object-contain relative z-[40]" autoPlay playsInline muted={isMuted} />
           )}
 
-          {/* CUSTOM CONTROLS OVERLAY */}
-          <div 
-            className={`absolute bottom-0 left-0 right-0 pt-16 pb-4 px-4 sm:px-8 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-[60] transition-opacity duration-300 flex flex-col justify-end ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* ProgressBar */}
+          <div className={`absolute bottom-0 left-0 right-0 pt-16 pb-4 px-8 bg-gradient-to-t from-black via-black/40 to-transparent z-[60] transition-opacity duration-300 flex flex-col justify-end ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={(e) => e.stopPropagation()}>
             <ProgressBar videoRef={videoRef} isLive={isLive} />
 
             <div className="flex items-center gap-6 mt-4 w-full">
-              {/* Play/Pause */}
               {!isNativePlatform && (
-                <button 
-                  onClick={togglePlay}
-                  className="text-white hover:text-[var(--color-rider-blue)] transition-colors hover:scale-110 active:scale-95"
-                >
-                  {isPlaying ? <Pause className="w-10 h-10 sm:w-14 sm:h-14 fill-current drop-shadow-md" /> : <Play className="w-10 h-10 sm:w-14 sm:h-14 fill-current drop-shadow-md" />}
+                <button onClick={togglePlay} className="nav-item text-white hover:text-[var(--color-rider-blue)] transition-colors">
+                  {isPlaying ? <Pause className="w-10 h-10 sm:w-14 sm:h-14 fill-current" /> : <Play className="w-10 h-10 sm:w-14 sm:h-14 fill-current" />}
                 </button>
               )}
 
-              {/* Volume Control (Only for Pointer Devices like PC) */}
               <div className="hidden lg:flex items-center gap-4">
                 <button onClick={toggleMute} className="text-white hover:text-[var(--color-rider-blue)] transition-colors">
                   {isMuted || volume === 0 ? <VolumeX className="w-8 h-8" /> : <Volume2 className="w-8 h-8" />}
                 </button>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="1" 
-                  step="0.05" 
-                  value={isMuted ? 0 : volume}
-                  onChange={handleVolumeChange}
-                  className="w-24 transition-all duration-300 accent-[var(--color-rider-blue)] cursor-pointer h-1.5 bg-white/20 rounded-lg appearance-none"
-                />
+                <input type="range" min="0" max="1" step="0.05" value={isMuted ? 0 : volume} onChange={handleVolumeChange} className="w-24 accent-[var(--color-rider-blue)] cursor-pointer" />
               </div>
 
-              {/* Time Display */}
-              <div className="text-lg sm:text-2xl">
-                <TimeDisplay videoRef={videoRef} isLive={isLive} />
-              </div>
-
+              <div className="text-lg sm:text-2xl"><TimeDisplay videoRef={videoRef} isLive={isLive} /></div>
               <div className="flex-1"></div>
 
-              {/* VOD Codec Helpers */}
               {!isLive && (
-                <div className="flex items-center gap-1 sm:gap-2 mr-2">
-                  <div className="group relative flex items-center">
-                    <button className="text-zinc-400 hover:text-white transition-colors p-2 cursor-help outline-none">
-                      <AlertCircle className="w-5 h-5 drop-shadow" />
+                <div className="flex items-center gap-2 mr-2">
+                  <div className="group relative">
+                    <button className="nav-item text-zinc-400 hover:text-white p-2 outline-none">
+                      <AlertCircle className="w-5 h-5" />
                     </button>
-                    <div className="absolute bottom-full right-1/2 translate-x-1/2 mb-4 w-64 bg-zinc-900 border border-zinc-700 text-xs text-zinc-300 p-3 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[100] text-center">
-                      Si experimentas falta de audio en estrenos 4K, el códec (Dolby AC-3/DTS) requiere un Smart TV o usar la opción <b className="text-white">"Ver en externo"</b> debido a licencias de tu navegador web.
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-700"></div>
+                    <div className="absolute bottom-full right-1/2 translate-x-1/2 mb-4 w-64 bg-zinc-900 border border-zinc-700 text-xs text-zinc-300 p-3 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[100]">
+                      Si no hay audio, usa <b className="text-white">"Ver en externo"</b>.
                     </div>
                   </div>
-
-                  <button 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      
-                      // Pausa suave (sin destrozar el buffer para evitar penalizaciones por parte del servidor IPTV)
-                      if (videoRef.current) videoRef.current.pause();
-                      setIsPlaying(false);
-                      
-                      // Formato M3U Clásico Exacto Original
-                      const m3uContent = "#EXTM3U\n#EXTINF:-1, Rider VOD\n" + streamUrl;
-                      const blob = new Blob([m3uContent], { type: 'application/vnd.apple.mpegurl' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = 'play.m3u';
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                    }}
-                    className="text-white hover:text-[var(--color-rider-blue)] p-2 transition-colors group relative"
-                    title="Ver en Reproductor Externo (ej. VLC)"
-                  >
-                    <ExternalLink className="w-5 h-5 drop-shadow group-hover:scale-110 active:scale-95 transition-transform" />
+                  <button onClick={(e) => { e.preventDefault(); if (videoRef.current) videoRef.current.pause(); setIsPlaying(false); const m3u = "#EXTM3U\n#EXTINF:-1, Rider VOD\n" + streamUrl; const blob = new Blob([m3u], { type: 'application/vnd.apple.mpegurl' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'play.m3u'; a.click(); URL.revokeObjectURL(url); }} className="nav-item text-white hover:text-[var(--color-rider-blue)] p-2 transition-colors relative" title="Ver en Reproductor Externo">
+                    <ExternalLink className="w-5 h-5" />
                   </button>
                 </div>
               )}
 
-              {/* Speed Settings */}
-              {!isLive && (
-                <button 
-                  onClick={toggleSpeed}
-                  className="text-white hover:text-[var(--color-rider-blue)] font-black text-sm tracking-widest px-2 transition-colors drop-shadow"
-                >
-                  {playbackRate}x
-                </button>
-              )}
+              {!isLive && <button onClick={toggleSpeed} className="nav-item text-white font-black text-sm tracking-widest px-2">{playbackRate}x</button>}
 
-              {/* Quality Settings UI */}
               <div className="relative">
-                <button 
-                  onClick={() => setShowSettings(!showSettings)}
-                  className={`text-white hover:text-[var(--color-rider-blue)] transition-colors ml-2 p-1.5 rounded-full hover:bg-white/10 ${showSettings ? 'rotate-90 bg-white/10' : ''}`}
-                >
-                  <Settings className="w-5 h-5 drop-shadow" />
-                </button>
-
+                <button onClick={() => setShowSettings(!showSettings)} className={`nav-item text-white hover:text-[var(--color-rider-blue)] transition-colors p-1.5 rounded-full ${showSettings ? 'rotate-90 bg-white/10' : ''}`}><Settings className="w-5 h-5" /></button>
                 {showSettings && (
-                  <div className="absolute bottom-full right-0 mb-4 bg-zinc-950/90 backdrop-blur-xl border border-zinc-800 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.8)] overflow-hidden w-48 animate-in slide-in-from-bottom-2 fade-in duration-200 z-[80]">
-                     <div className="px-4 py-3 bg-white/5 border-b border-white/5">
-                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Resolución</span>
-                     </div>
+                  <div className="absolute bottom-full right-0 mb-4 bg-zinc-950/90 backdrop-blur-xl border border-zinc-800 rounded-2xl w-48 z-[80]">
+                     <div className="px-4 py-3 bg-white/5 border-b border-white/5"><span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Calidad</span></div>
                      <div className="flex flex-col py-2">
-                       {hlsLevels.length <= 1 ? (
-                         <div className="px-5 py-3 text-sm text-zinc-500 font-medium italic">
-                           Calidad Original (Fuente única)
-                         </div>
-                       ) : (
-                         <>
-                           <button 
-                             onClick={() => changeQuality(-1)}
-                             className={`px-5 py-2.5 text-left text-sm font-bold transition-colors hover:bg-white/10 ${currentLevel === -1 ? 'text-[var(--color-rider-blue)]' : 'text-zinc-300'}`}
-                           >
-                             Automático {currentLevel === -1 && '✓'}
-                           </button>
-                           {hlsLevels.map((lvl) => (
-                             <button 
-                               key={lvl.index}
-                               onClick={() => changeQuality(lvl.index)}
-                               className={`px-5 py-2.5 text-left text-sm font-bold transition-colors hover:bg-white/10 ${currentLevel === lvl.index ? 'text-[var(--color-rider-blue)]' : 'text-white'}`}
-                             >
-                               {lvl.name} {currentLevel === lvl.index && '✓'}
-                             </button>
-                           ))}
-                         </>
+                       {hlsLevels.length <= 1 ? <div className="px-5 py-3 text-sm text-zinc-500 italic">Original</div> : (
+                          <>
+                            <button onClick={() => changeQuality(-1)} className={`nav-item px-5 py-2 text-left text-sm font-bold ${currentLevel === -1 ? 'text-[var(--color-rider-blue)]' : 'text-zinc-300'}`}>Automático</button>
+                            {hlsLevels.map((lvl) => <button key={lvl.index} onClick={() => changeQuality(lvl.index)} className={`nav-item px-5 py-2 text-left text-sm font-bold ${currentLevel === lvl.index ? 'text-[var(--color-rider-blue)]' : 'text-white'}`}>{lvl.name}</button>)}
+                          </>
                        )}
                      </div>
                   </div>
                 )}
               </div>
 
-              {/* Fullscreen */}
-              <button 
-                onClick={toggleFullscreen}
-                className="text-white hover:text-[var(--color-rider-blue)] transition-colors ml-4 hover:scale-110 active:scale-95"
-              >
-                <Maximize className="w-6 h-6 drop-shadow" />
-              </button>
+              <button onClick={toggleFullscreen} className="nav-item text-white hover:text-[var(--color-rider-blue)] transition-colors ml-4"><Maximize className="w-6 h-6" /></button>
             </div>
           </div>
         </>
@@ -713,4 +535,3 @@ export function VideoPlayer({ streamUrl, isLive = false }: VideoPlayerProps) {
     </div>
   )
 }
-

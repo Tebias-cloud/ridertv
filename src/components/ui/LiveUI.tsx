@@ -74,7 +74,7 @@ function LiveCategoryRow({ category, account, renderChannelCard, onChannelsLoade
         <div className="flex gap-4 sm:gap-6 overflow-x-auto hide-scrollbar pt-4 pb-6 mx-[-1rem] px-[1rem] sm:mx-0 sm:px-0">
           {loading ? (
              [...Array(5)].map((_, j) => (
-                <div key={`skel-live-${category.category_id}-${j}`} className="aspect-video bg-zinc-900/50 rounded-xl animate-pulse border border-white/5"></div>
+                <div key={`skel-live-${category.category_id}-${j}`} className="nav-item aspect-video bg-zinc-900/50 rounded-xl animate-pulse border border-white/5 outline-none focus:scale-105" tabIndex={0}></div>
              ))
           ) : error ? (
              <div className="flex items-center gap-3 py-6 px-6 bg-zinc-900/40 rounded-xl border border-zinc-800 text-zinc-500">
@@ -232,7 +232,7 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
                   if (firstItem) firstItem.focus();
                 }
               }}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-full py-3 px-6 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[var(--color-rider-blue)]/50 focus:ring-1 focus:ring-[var(--color-rider-blue)]/50 transition-all shadow-inner"
+              className="nav-item w-full bg-zinc-900 border border-zinc-800 rounded-full py-3 px-6 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[var(--color-rider-blue)]/50 focus:ring-1 focus:ring-[var(--color-rider-blue)]/50 transition-all shadow-inner"
             />
         </div>
       </div>
@@ -311,13 +311,13 @@ export function LiveUI({ categories, account }: { categories: any[], account: an
                 <div className="flex items-center gap-2">
                    <button 
                      onClick={() => toggleFavorite({ id: selectedChannel.stream_id, type: 'live', data: selectedChannel })} 
-                     className="bg-white/5 hover:bg-white/10 hover:text-red-500 p-3 rounded-full text-zinc-400 transition-all outline-none"
+                     className="nav-item bg-white/5 hover:bg-white/10 hover:text-red-500 p-3 rounded-full text-zinc-400 transition-all outline-none"
                    >
                      <Heart className={`w-5 h-5 ${isFavorite(selectedChannel.stream_id, 'live') ? 'fill-red-500 text-red-500' : ''}`} />
                    </button>
                    <button 
                      onClick={() => setSelectedChannel(null)} 
-                     className="bg-white/5 hover:bg-white/10 p-3 rounded-full text-zinc-400 outline-none"
+                     className="nav-item bg-white/5 hover:bg-white/10 p-3 rounded-full text-zinc-400 outline-none"
                    >
                      <X className="w-5 h-5" />
                    </button>

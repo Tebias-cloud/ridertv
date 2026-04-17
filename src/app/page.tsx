@@ -15,14 +15,24 @@ function LoginForm() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
+    // 💨 Redirect Rápido: Chequeo de sesión inmediata
+    const checkSession = async () => {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        const role = session.user?.user_metadata?.role
+        router.replace(role === 'admin' ? '/admin' : '/catalog')
+      }
+    }
+    checkSession()
+
     if (errorParam === 'suspended') {
       setErrorMsg('Tu cuenta ha expirado o ha sido suspendida. Contacta al soporte.')
     }
-  }, [errorParam])
-
-  const router = useRouter()
+  }, [errorParam, router])
 
   async function handleAction(formData: FormData) {
     setIsLoading(true)
@@ -57,11 +67,7 @@ function LoginForm() {
       } else {
         // Redirección inteligente basada en Rol
         const role = data.user?.user_metadata?.role
-        if (role === 'admin') {
-          router.push('/admin')
-        } else {
-          router.push('/catalog')
-        }
+        router.replace(role === 'admin' ? '/admin' : '/catalog')
       }
     } catch (err: any) {
       setErrorMsg('Error de conexión con Rider TV. Reintenta en unos segundos.')

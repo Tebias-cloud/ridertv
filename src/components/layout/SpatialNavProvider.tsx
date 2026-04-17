@@ -1,10 +1,50 @@
 "use client"
 
-import { useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import { App } from '@capacitor/app'
+import { createClient } from '@/lib/supabase/client'
+import { ExitDialog } from '@/components/ui/ExitDialog'
 
 export function SpatialNavProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const [isExitDialogOpen, setIsExitDialogOpen] = useState(false)
+
+  useEffect(() => {
+    // 🔙 Interceptor de Botón Atrás Físico (Capacitor / Android TV)
+    let backListener: any = null;
+
+    const setupBackListener = async () => {
+      backListener = await App.addListener('backButton', ({ canGoBack }) => {
+        // Si estamos en una pantalla raíz, mostrar el diálogo de salida
+        if (pathname === '/' || pathname === '/catalog' || pathname === '/admin' || !canGoBack) {
+          setIsExitDialogOpen(true)
+        } else {
+          // Si no es raíz, intentar navegar atrás normalmente
+          window.history.back()
+        }
+      });
+    };
+
+    setupBackListener();
+
+    return () => {
+      if (backListener) backListener.remove();
+    }
+  }, [pathname]);
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    localStorage.clear() // Limpiar credenciales de IPTV persistentes
+    setIsExitDialogOpen(false)
+    router.replace('/')
+  }
+
+  const handleExitApp = () => {
+    App.exitApp()
+  }
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -92,5 +132,15 @@ export function SpatialNavProvider({ children }: { children: React.ReactNode }) 
     return () => clearTimeout(timer)
   }, [pathname])
 
-  return <>{children}</>
+  return (
+    <>
+      {children}
+      <ExitDialog 
+        isOpen={isExitDialogOpen} 
+        onClose={() => setIsExitDialogOpen(false)} 
+        onExit={handleExitApp} 
+        onLogout={handleLogout}
+      />
+    </>
+  )
 }

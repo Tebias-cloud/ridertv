@@ -345,13 +345,13 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
             <div className="absolute top-4 right-4 z-50 flex gap-2">
                <button 
                  onClick={() => toggleFavorite({ id: selectedSerie.series_id, type: 'series', data: selectedSerie })}
-                 className="bg-black/50 hover:bg-white text-zinc-300 hover:text-red-500 backdrop-blur-md p-3 rounded-full transition-all outline-none focus:ring-4 focus:ring-rose-500 active:scale-90"
+                 className="nav-item bg-black/50 hover:bg-white text-zinc-300 hover:text-red-500 backdrop-blur-md p-3 rounded-full transition-all outline-none focus:ring-4 focus:ring-rose-500 active:scale-90"
                >
                  <Heart className={`w-5 h-5 ${isFavorite(selectedSerie.series_id, 'series') ? 'fill-red-500 text-red-500' : ''}`} />
                </button>
                <button 
                  onClick={() => { setSelectedSerie(null); setPlayingEpisode(null); }} 
-                 className="bg-black/50 hover:bg-white text-zinc-300 hover:text-black backdrop-blur-md p-3 rounded-full transition-all outline-none focus:ring-4 focus:ring-white active:scale-90"
+                 className="nav-item bg-black/50 hover:bg-white text-zinc-300 hover:text-black backdrop-blur-md p-3 rounded-full transition-all outline-none focus:ring-4 focus:ring-white active:scale-90"
                >
                  <X className="w-5 h-5" />
                </button>
@@ -406,7 +406,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
                            <button 
                               key={`s-${seasonNum}`}
                               onClick={() => setActiveSeason(seasonNum)}
-                              className={`px-5 py-2 rounded-full font-bold text-sm transition-colors shrink-0 ${activeSeason === seasonNum ? 'bg-white text-black' : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400'}`}
+                              className={`nav-item px-5 py-2 rounded-full font-bold text-sm transition-colors shrink-0 ${activeSeason === seasonNum ? 'bg-white text-black' : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400'}`}
                            >
                              Temporada {seasonNum}
                            </button>
@@ -420,7 +420,7 @@ export function SeriesUI({ categories, account }: { categories: any[], account: 
                              key={ep.id}
                              onClick={() => setPlayingEpisode(ep)}
                              tabIndex={0}
-                             className={`flex flex-col sm:flex-row gap-4 p-4 rounded-2xl transition-all w-full text-left group border outline-none focus:ring-[6px] focus:ring-white focus:scale-[1.02] focus:z-50
+                             className={`nav-item flex flex-col sm:flex-row gap-4 p-4 rounded-2xl transition-all w-full text-left group border outline-none focus:ring-[6px] focus:ring-white focus:scale-[1.02] focus:z-50
                                ${playingEpisode?.id === ep.id 
                                  ? 'bg-rose-500/10 border-rose-500/30' 
                                  : 'bg-zinc-900/50 hover:bg-zinc-800 border-transparent hover:border-white/5'
