@@ -24,7 +24,9 @@ function LoginForm() {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
         const role = session.user?.user_metadata?.role
-        window.location.href = role === 'admin' ? '/admin.html' : '/catalog.html'
+        if (role === 'admin') {
+          router.push('/admin')
+        }
       }
     }
     checkSession()
@@ -65,9 +67,13 @@ function LoginForm() {
           setErrorMsg(error.message)
         }
       } else {
-        // Redirección inteligente basada en Rol
         const role = data.user?.user_metadata?.role
-        window.location.href = role === 'admin' ? '/admin.html' : '/catalog.html'
+        if (role === 'admin') {
+          router.push('/admin')
+        } else {
+          setErrorMsg('Acceso restringido. Este portal es solo para administradores.')
+          await supabase.auth.signOut()
+        }
       }
     } catch (err: any) {
       setErrorMsg('Error de conexión con Rider TV. Reintenta en unos segundos.')

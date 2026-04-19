@@ -19,29 +19,15 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
       if (data.user?.email) {
         setLocalUser(data.user.email.replace('@rider.com', ''))
         
-        // Role check via Auth Metadata (fast & static-compatible)
         const role = data.user.user_metadata?.role
         if (role === 'admin') setIsAdmin(true)
       }
     })
-
-    // Check platform
-    import('@capacitor/core').then(m => {
-      setIsNative(m.Capacitor.isNativePlatform())
-    })
   }, [])
 
   const links = [
-    { name: 'Inicio / Descubrir', href: '/catalog.html', icon: Home },
-    { name: 'TV en Vivo', href: '/live.html', icon: Tv },
-    { name: 'Películas (VOD)', href: '/catalog.html', icon: Film },
-    { name: 'Series', href: '/series.html', icon: Clapperboard },
+    { name: 'Admin Dashboard', href: '/admin', icon: ShieldCheck }
   ]
-
-  // Add Admin if web and authorized
-  if (isAdmin && !isNative) {
-    links.push({ name: 'Admin Panel', href: '/admin', icon: ShieldCheck })
-  }
 
   // Convert TIMESTAMP to Date safely
   let accountExpDate = 'No disponible'
@@ -96,7 +82,7 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
                 const supabase = createClient()
                 await supabase.auth.signOut()
                 localStorage.clear()
-                window.location.href = '/index.html'
+                window.location.href = '/'
              }}
              className="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl text-zinc-500 hover:text-red-500 hover:bg-red-500/10 focus:bg-red-500/20 focus:text-red-500 transition-all duration-300 font-medium group outline-none"
            >

@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/toggle-server.js enable && next build",
-    "start": "node scripts/toggle-server.js enable && next start"
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",
