@@ -1,42 +1,72 @@
-# 🔴🔵 Rider TV - Plataforma IPTV Premium
+# 🔴🔵 Rider TV - Ecosistema IPTV & Centro de Migración
 
-Bienvenido al ecosistema **Rider TV**, un cliente Web de Alto Rendimiento para conexiones IPTV y Xtream Codes, estructurado sobre Next.js 14 y Supabase.
+> [!WARNING]
+> **ESTADO DEL PROYECTO: TRANSICIÓN A NATIVO**
+> Este repositorio contiene la implementación Web/Capacitor (JS) actual de Rider TV. Debido a limitaciones de rendimiento en hardware de Smart TV de bajo costo y la complejidad de la gestión de foco (Spatial Navigation) en React, este stack ha sido declarado **inestable** y está en proceso de migración hacia **Android Nativo (Kotlin)**.
 
-## 🚀 Tecnologías Principales
+---
 
-- **Frontend:** Next.js 14 (App Router), React, TailwindCSS, TypeScript.
-- **Backend & Auth:** Supabase Auth (Cifrado Militar HLS), Supabase Database (Profiles & External Accounts).
-- **Rendimiento:** Optimización de Motor en Cliente (Map/Hash `O(N)` para evitar cuellos de botella en Smart TVs de bajo nivel).
-- **Reproducción HLS:** Integración de HLS.js con soporte proxy para sortear restricciones CORS en navegadores.
+## 🏛️ Arquitectura Actual (Legacy)
 
-## 📺 Características
+El sistema opera bajo un modelo híbrido diseñado para despliegue en Vercel y empaquetado mediante Capacitor para Android.
 
-- **Panel Administrativo Maestro:** Gestión de perfiles de usuario, modificación del tiempo de vida, cambio de contraseña web forzada, y edición bidireccional en caliente de Credenciales IPTVs y Portales.
-- **Catálogo Inmersivo UI/UX:** Interfaz fluida estilo "Netflix", con fondos difuminados, arte flotante 3D y extracción asíncrona ("Stealth Fetch") de Metadatos profundos por película.
-- **Rendimiento Smart TV:** Uso minimizado de la memoria y control por teclado/D-Pad (`ArrowKeys`, `Enter`, `Escape`) habilitado para compatibilidad plena con la flecha direccional de televisores inteligentes.
-- **Buscador Universal:** Filtrado de +50k elementos y eliminación algorítmica garantizada de contenido SFW para familias.
+### 🧩 Componentes Core
+- **Framework:** Next.js 15+ (App Router).
+- **Control de Foco:** `spatial-navigation-js` integrado mediante Hooks personalizados para manejar el D-Pad de televisores.
+- **Data Layer:** Supabase (Auth, Profiles, External Accounts).
+- **IPTV Core:** Proxy de servidor para inyección de Headers y bypass de CORS en proveedores Xtream Codes.
 
-## 🔧 Configuración para Desarrollo
+### 🛠️ Sistema de Construcción Dual (`toggle-server.js`)
+El proyecto utiliza un script de pre-procesamiento para alternar entre modos:
+- **`npm run dev` / `npm run start`**: Habilita `/api` y `/admin` moviendo carpetas desde `src/server-only`.
+- **`npm run build:mobile`**: Deshabilita rutas de servidor para generar un export estático compatible con Capacitor y Android Assets.
 
-Para ejecutar en local, asegúrate de tener las siguientes variables de entorno en tu `.env.local`:
+---
 
+## 🎯 Hoja de Ruta de Migración (Destino: Android Kotlin)
+
+La meta es replicar la experiencia premium de Rider TV en un entorno 100% nativo para garantizar fluidez de 60 FPS y estabilidad total.
+
+### 🎨 Paridad Visual (Android UI)
+Se deben mantener los siguientes pilares estéticos en la versión Kotlin:
+- **Dynamic Backgrounds:** Fondos difuminados (Blur) basados en el arte del contenido seleccionado.
+- **3D Floating Cards:** Animaciones de escala y elevación al recibir el foco.
+- **Premium Glassmorphism:** Menús laterales translúcidos y overlays de información.
+
+### ⚙️ Paridad Funcional
+1. **Stealth Fetch:** Implementar la lógica de extracción asíncrona de metadatos profundos (Cast, Sinopsis, Tráileres).
+2. **Xtream Engine:** Portar la lógica de `proxy/route.ts` (Headers de VLC, User-Agents específicos) al cliente nativo usando **Retrofit** u **OkHttp**.
+3. **Spatial Nav:** Sustituir la lógica de JS por la gestión nativa de `Focusables` de Android TV.
+
+---
+
+## 🔧 Configuración para Desarrollo de Sostenimiento
+
+Mientras la migración nativa está en curso, estas son las instrucciones para mantener la versión actual:
+
+### Variables de Entorno
+Crea un `.env.local` con:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=tu_url_supabase
 NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key_supabase
-SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key # (Solo para Server Actions Administrativas)
+SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
 ```
 
-Luego arranca el entorno local:
+### Comandos de Ejecución
 ```bash
-npm install
+# Servidor de Desarrollo (Web)
 npm run dev
+
+# Compilación para Android (Capacitor)
+npm run build:mobile
 ```
-
-Abra [http://localhost:3000](http://localhost:3000)
-
-## 🌎 Despliegue Público a Vercel
-
-Soporte `Edge Functions` listo. Recomendado integrar directo a [Vercel](https://vercel.com/new).
 
 ---
-© 2026 Plataforma Rider TV. Streaming sin límites.
+
+## 📄 Notas de Auditoría Técnica
+- **Punto de Dolor 1:** La hidratación de React causa "Jank" en el movimiento del foco inicial en hardware Mediatek de Smart TVs.
+- **Punto de Dolor 2:** Los bloqueos de CORS de los proveedores IPTV requieren el proxy de Vercel, el cual es ineficiente para streaming masivo. La versión Kotlin debe manejar esto mediante manejo de cabeceras crudas en el socket.
+- **Punto de Dolor 3:** Memoria persistente; Capacitor consume ~150MB adicionales comparado con una solución Kotlin pura.
+
+---
+© 2026 Plataforma Rider TV. Construyendo el futuro del Streaming Nativo.

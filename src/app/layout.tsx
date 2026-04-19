@@ -20,6 +20,7 @@ export const viewport = {
 };
 
 import { SpatialNavProvider } from '@/components/layout/SpatialNavProvider'
+import { AppInitializer } from '@/components/layout/AppInitializer'
 
 export default function RootLayout({
   children,
@@ -79,9 +80,10 @@ export default function RootLayout({
             var observer = new MutationObserver(function(mutations) {
               mutations.forEach(function(mutation) {
                 mutation.addedNodes.forEach(function(node) {
-                  if (node.tagName === 'LINK' && (node.rel === 'prefetch' || node.rel === 'next-prefetch' || node.as === 'fetch')) {
-                    if (node.href.includes('_rsc') || node.href.includes('.txt')) {
-                       node.href = ''; 
+                  if (node.tagName && node.tagName.toUpperCase() === 'LINK' && (node.rel === 'prefetch' || node.rel === 'next-prefetch' || node.as === 'fetch')) {
+                    if (node.href && (node.href.includes('_rsc') || node.href.includes('.txt'))) {
+                       console.log('🚫 [Interceptor] Bloqueado prefetch de: ' + node.href);
+                       node.href = '#'; 
                        node.remove();
                     }
                   }
@@ -89,24 +91,20 @@ export default function RootLayout({
               });
             });
             
-            // Esperar a que el DOM esté listo o usar el head directamente
-            if (document.head) {
-              observer.observe(document.head, { childList: true });
-            } else {
-              document.addEventListener('DOMContentLoaded', function() {
-                observer.observe(document.head, { childList: true });
-              });
-            }
+            // Observar todo el documento para máxima seguridad
+            observer.observe(document, { childList: true, subtree: true });
 
             console.log('⚡ [Nuclear Fix 2.1] Aggressive Prefetch Killer Active');
           })();
         `}} />
         <meta httpEquiv="Content-Security-Policy" content="upgrade-insecure-requests" />
       </head>
-      <body className="min-h-full flex flex-col">
-        <SpatialNavProvider>
-          {children}
-        </SpatialNavProvider>
+      <body className="min-h-screen bg-black flex flex-col overflow-hidden">
+        <AppInitializer>
+          <SpatialNavProvider>
+            {children}
+          </SpatialNavProvider>
+        </AppInitializer>
       </body>
     </html>
   );

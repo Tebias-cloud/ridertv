@@ -1,61 +1,33 @@
-"use client"
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { useNavigate, useLocation } from 'react-router-dom'
 import React, { useState, useEffect } from 'react'
-import { Home, Tv, Film, Clapperboard, User, LogOut, ShieldCheck } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
-import { getUserRoleAction } from '@/actions/admin'
+import { Home, Tv, Film, Clapperboard, User, LogOut } from 'lucide-react'
+import { createClient } from '../../lib/supabase/client'
 
 export const Sidebar = React.memo(function Sidebar({ account }: { account?: any }) {
-  const pathname = usePathname()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [isAccountModalOpen, setAccountModalOpen] = useState(false)
   const [localUser, setLocalUser] = useState<string>('Usuario')
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [isNative, setIsNative] = useState(true) // assume native until confirmed
 
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data }) => {
       if (data.user?.email) {
         setLocalUser(data.user.email.replace('@rider.com', ''))
-        
-        // Role check via Auth Metadata (fast & static-compatible)
-        const role = data.user.user_metadata?.role
-        if (role === 'admin') setIsAdmin(true)
       }
-    })
-
-    // Check platform
-    import('@capacitor/core').then(m => {
-      setIsNative(m.Capacitor.isNativePlatform())
     })
   }, [])
 
   const links = [
-    { name: 'Inicio / Descubrir', href: '/catalog.html', icon: Home },
-    { name: 'TV en Vivo', href: '/live.html', icon: Tv },
-    { name: 'Películas (VOD)', href: '/catalog.html', icon: Film },
-    { name: 'Series', href: '/series.html', icon: Clapperboard },
+    { name: 'Inicio / Descubrir', path: '/catalog', icon: Home },
+    { name: 'TV en Vivo', path: '/live', icon: Tv },
+    { name: 'Películas (VOD)', path: '/catalog', icon: Film },
+    { name: 'Series', path: '/series', icon: Clapperboard },
   ]
 
-  // Add Admin if web and authorized
-  if (isAdmin && !isNative) {
-    links.push({ name: 'Admin Panel', href: '/admin', icon: ShieldCheck })
-  }
-
-  // Convert TIMESTAMP to Date safely
-  let accountExpDate = 'No disponible'
-  if (account?.expires_at) {
-    const isTimestamp = !isNaN(Number(account.expires_at))
-    const dateValue = isTimestamp ? Number(account.expires_at) * 1000 : account.expires_at
-    
-    try {
-      accountExpDate = new Intl.DateTimeFormat('es-CL', {
-        day: '2-digit', month: 'long', year: 'numeric'
-      }).format(new Date(dateValue))
-    } catch(e) {
-      accountExpDate = '-'
-    }
+  // Para marcar como activo comparamos con la ruta de React Router
+  const isLinkActive = (path: string) => {
+    return location.pathname === path || (location.pathname.startsWith(path) && path !== '/')
   }
 
   return (
@@ -69,16 +41,16 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
 
         <nav className="flex-1 space-y-3">
           {links.map(link => {
-            const isActive = pathname === link.href || pathname.startsWith(link.href) && link.href !== '/catalog'
+            const isActive = isLinkActive(link.path)
             return (
-              <a 
+              <button 
                 key={link.name} 
-                href={link.href} 
-                className={`sidebar-item flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 ease-out transform-gpu outline-none ${isActive ? 'bg-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] scale-[1.02]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5 focus:bg-white/10 focus:text-white'}`}
+                onClick={() => navigate(link.path)}
+                className={`sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 ease-out transform-gpu outline-none ${isActive ? 'bg-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] scale-[1.02]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5 focus:bg-white/10 focus:text-white'}`}
               >
                 <link.icon className={`w-5 h-5 transition-colors ${isActive ? 'text-[var(--color-rider-blue)]' : 'group-focus:text-[var(--color-rider-blue)]'}`} />
                 {link.name}
-              </a>
+              </button>
             )
           })}
         </nav>
@@ -96,7 +68,7 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
                 const supabase = createClient()
                 await supabase.auth.signOut()
                 localStorage.clear()
-                window.location.href = '/index.html'
+                navigate('/')
              }}
              className="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl text-zinc-500 hover:text-red-500 hover:bg-red-500/10 focus:bg-red-500/20 focus:text-red-500 transition-all duration-300 font-medium group outline-none"
            >
@@ -130,10 +102,6 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
                 <span className="bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border border-emerald-500/20">
                   {account?.status === 'active' ? 'ACTIVA' : account?.status || 'ACTIVA'}
                 </span>
-              </div>
-              <div className="bg-zinc-950/80 rounded-2xl p-4 flex justify-between items-center shadow-inner">
-                <span className="text-zinc-500 text-sm font-semibold tracking-wide">Expiración</span>
-                <span className="text-white font-bold">{accountExpDate}</span>
               </div>
             </div>
             
