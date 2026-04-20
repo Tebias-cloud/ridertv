@@ -83,12 +83,12 @@ function LoginForm() {
   }
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-screen bg-slate-950 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <div className="relative flex flex-col items-center justify-center min-h-[100dvh] bg-slate-950 px-4 sm:px-6 lg:px-8">
       {/* Decorative Glow Blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40rem] h-[40rem] bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40rem] h-[40rem] bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40rem] h-[40rem] bg-red-600/10 rounded-full blur-3xl pointer-events-none z-0" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40rem] h-[40rem] bg-blue-600/10 rounded-full blur-3xl pointer-events-none z-0" />
       
-      <div className="relative z-10 w-full max-w-2xl space-y-12">
+      <div className="relative z-20 w-full max-w-2xl space-y-12">
         <div className="flex flex-col items-center">
           <h1 className="text-center text-5xl md:text-6xl tracking-[0.1em] font-extrabold uppercase bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-blue-500 drop-shadow-lg">
             Rider TV

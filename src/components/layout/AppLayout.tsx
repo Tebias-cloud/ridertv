@@ -7,7 +7,7 @@ export function AppLayout({ children, account }: { children: React.ReactNode, ac
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-black overflow-hidden">
+    <div className="flex flex-col md:flex-row h-[100dvh] bg-black overflow-hidden">
       {/* Mobile Header */}
       <header className="md:hidden flex items-center justify-between px-6 py-4 bg-zinc-950 border-b border-white/5 z-[55]">
         <h2 className="text-xl font-black uppercase bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-blue-500">
