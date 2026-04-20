@@ -135,7 +135,7 @@ export default function AdminClientPanel({ initialProfiles, currentUserId }: { i
   return (
     <div className="space-y-8">
       {/* Create User Form */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 md:p-6">
         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
           <UserPlus className="w-5 h-5 text-[var(--color-rider-blue)]" />
           Registrar Nuevo Cliente
@@ -156,7 +156,7 @@ export default function AdminClientPanel({ initialProfiles, currentUserId }: { i
                      required
                      value={username}
                      onChange={e => setUsername(e.target.value)}
-                     className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-[var(--color-rider-blue)]"
+                     className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-[var(--color-rider-blue)]"
                      placeholder="ej. carlos50"
                    />
                  </div>
@@ -227,9 +227,9 @@ export default function AdminClientPanel({ initialProfiles, currentUserId }: { i
       </div>
 
       {/* Users Table */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-zinc-400">
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-700">
+          <table className="w-full text-left text-sm text-zinc-400 min-w-[800px] md:min-w-0">
             <thead className="bg-zinc-950/50 text-xs uppercase text-zinc-500 border-b border-zinc-800">
               <tr>
                 <th className="px-6 py-4">Usuario</th>

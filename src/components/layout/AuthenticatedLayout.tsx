@@ -35,7 +35,15 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
   }, [router])
 
   if (loading) {
-    return <div className="min-h-screen bg-zinc-950" />
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4">
+        <h1 className="text-4xl font-extrabold uppercase bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-blue-500 animate-pulse">
+            Rider TV
+        </h1>
+        <div className="spinner" />
+        <p className="text-zinc-500 text-sm font-medium animate-pulse">Autenticando acceso maestro...</p>
+      </div>
+    )
   }
 
   return (

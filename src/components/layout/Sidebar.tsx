@@ -6,12 +6,11 @@ import { Home, Tv, Film, Clapperboard, User, LogOut, ShieldCheck } from 'lucide-
 import { createClient } from '@/lib/supabase/client'
 import { getUserRoleAction } from '@/actions/admin'
 
-export const Sidebar = React.memo(function Sidebar({ account }: { account?: any }) {
+export const Sidebar = React.memo(function Sidebar({ account, isOpen, onClose }: { account?: any, isOpen?: boolean, onClose?: () => void }) {
   const pathname = usePathname()
   const [isAccountModalOpen, setAccountModalOpen] = useState(false)
   const [localUser, setLocalUser] = useState<string>('Usuario')
   const [isAdmin, setIsAdmin] = useState(false)
-  const [isNative, setIsNative] = useState(true) // assume native until confirmed
 
   useEffect(() => {
     const supabase = createClient()
@@ -46,11 +45,24 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
 
   return (
     <>
-      <aside className="sticky top-0 h-screen w-[280px] bg-zinc-950/80 backdrop-blur-3xl border-r border-white/5 flex flex-col py-8 px-6 z-50 shrink-0 transform-gpu will-change-transform">
-        <div className="mb-12">
-          <h2 className="text-2xl md:text-3xl tracking-[0.1em] font-extrabold uppercase bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-blue-500 drop-shadow-lg">
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] md:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <aside className={`
+        fixed md:sticky top-0 left-0 h-screen w-[280px] bg-zinc-950/80 backdrop-blur-3xl border-r border-white/5 
+        flex flex-col py-8 px-6 z-[70] shrink-0 transform transition-transform duration-300 ease-in-out
+        ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <div className="mb-12 flex justify-between items-center">
+          <h2 className="text-2xl md:text-3xl tracking-[0.1em] font-extrabold uppercase bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-blue-500">
             RIDER TV
           </h2>
+          <button onClick={onClose} className="md:hidden text-zinc-500">✕</button>
         </div>
 
         <nav className="flex-1 space-y-3">
@@ -60,6 +72,7 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
               <a 
                 key={link.name} 
                 href={link.href} 
+                onClick={onClose}
                 className={`sidebar-item flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 ease-out transform-gpu outline-none ${isActive ? 'bg-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] scale-[1.02]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5 focus:bg-white/10 focus:text-white'}`}
               >
                 <link.icon className={`w-5 h-5 transition-colors ${isActive ? 'text-[var(--color-rider-blue)]' : 'group-focus:text-[var(--color-rider-blue)]'}`} />
@@ -71,7 +84,10 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
 
         <div className="mt-8 border-t border-white/5 pt-6 space-y-2">
            <button 
-             onClick={() => setAccountModalOpen(true)}
+             onClick={() => {
+               setAccountModalOpen(true)
+               if(onClose) onClose()
+             }}
              className="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl text-zinc-500 hover:text-white hover:bg-white/5 focus:bg-white/10 focus:text-white transition-all duration-300 font-medium group outline-none"
            >
              <User className="w-5 h-5 group-hover:text-[var(--color-rider-blue)] group-focus:text-[var(--color-rider-blue)] transition-colors" />
@@ -99,7 +115,7 @@ export const Sidebar = React.memo(function Sidebar({ account }: { account?: any 
             <button className="absolute top-6 right-6 text-zinc-600 hover:text-white" onClick={() => setAccountModalOpen(false)}>✕</button>
             
             <div className="text-center mb-8">
-               <div className="w-20 h-20 bg-gradient-to-tr from-zinc-800 to-zinc-900 rounded-[2rem] mx-auto flex items-center justify-center mb-5 shadow-inner shadow-white/5 border border-white/5">
+               <div className="w-20 h-20 bg-gradient-tr from-zinc-800 to-zinc-900 rounded-[2rem] mx-auto flex items-center justify-center mb-5 shadow-inner shadow-white/5 border border-white/5">
                  <User className="w-8 h-8 text-[var(--color-rider-blue)]" />
                </div>
                <h3 className="text-2xl font-bold text-white tracking-tight">Tu Pase Digital</h3>

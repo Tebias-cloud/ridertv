@@ -18,7 +18,6 @@ html, body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   height: 100%;
   width: 100%;
-  overflow: hidden !important;
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
@@ -52,11 +51,6 @@ html, body {
      will-change: transform, box-shadow;
   }
 
-  /* Ocultar cursor del mouse en TV */
-  @media (pointer: coarse) {
-    * { cursor: none !important; }
-  }
-
   /* Scroll suave global */
   html {
      scroll-behavior: smooth;
@@ -71,5 +65,19 @@ html, body {
 
   .app-ready {
     opacity: 1;
+  }
+
+  /* 💫 Loading Spinner */
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--color-rider-blue);
+    animation: spin 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 }
