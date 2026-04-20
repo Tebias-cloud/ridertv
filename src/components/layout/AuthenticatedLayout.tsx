@@ -36,12 +36,12 @@ export function AuthenticatedLayout({ children }: { children: React.ReactNode })
 
   if (loading) {
     return (
-      <div className="min-h-[100dvh] bg-zinc-950 flex flex-col items-center justify-center gap-4">
-        <h1 className="text-4xl font-extrabold uppercase bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-blue-500 animate-pulse">
+      <div className="min-h-[100dvh] bg-black flex flex-col items-center justify-center gap-4">
+        <h1 className="text-4xl font-extrabold uppercase text-white">
             Rider TV
         </h1>
         <div className="spinner" />
-        <p className="text-zinc-500 text-sm font-medium animate-pulse">Autenticando acceso maestro...</p>
+        <p className="text-zinc-500 text-sm font-medium">Cargando Sistema...</p>
       </div>
     )
   }

@@ -83,18 +83,14 @@ function LoginForm() {
   }
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-[100dvh] bg-slate-950 px-4 sm:px-6 lg:px-8">
-      {/* Decorative Glow Blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40rem] h-[40rem] bg-red-600/10 rounded-full blur-3xl pointer-events-none z-0" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40rem] h-[40rem] bg-blue-600/10 rounded-full blur-3xl pointer-events-none z-0" />
-      
+    <div className="relative flex flex-col items-center justify-center min-h-[100dvh] bg-black px-4 sm:px-6 lg:px-8">
       <div className="relative z-20 w-full max-w-2xl space-y-12">
         <div className="flex flex-col items-center">
-          <h1 className="text-center text-5xl md:text-6xl tracking-[0.1em] font-extrabold uppercase bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-blue-500 drop-shadow-lg">
+          <h1 className="text-center text-5xl md:text-6xl tracking-[0.1em] font-extrabold uppercase text-white drop-shadow-lg">
             Rider TV
           </h1>
           <p className="mt-4 text-center text-xl text-zinc-400 font-medium tracking-wide">
-            Streaming sin límites (Solo Usuario y Clave)
+            Administración Maestro <span className="text-[10px] opacity-30">v1.1</span>
           </p>
         </div>
 
@@ -170,8 +166,8 @@ function LoginForm() {
 export default function RootHomePage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen bg-slate-950">
-        <h1 className="text-center text-5xl md:text-6xl tracking-[0.1em] font-extrabold uppercase bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-blue-500">
+      <div className="flex items-center justify-center min-h-[100dvh] bg-black">
+        <h1 className="text-center text-4xl font-extrabold uppercase text-white">
             Rider TV
         </h1>
       </div>
