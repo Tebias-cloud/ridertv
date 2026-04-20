@@ -15,18 +15,27 @@ function LoginForm() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
+    setIsMounted(true)
+    
     // 💨 Redirect Rápido: Chequeo de sesión inmediata
     const checkSession = async () => {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        const role = session.user?.user_metadata?.role
-        if (role === 'admin') {
-          router.push('/admin')
+      try {
+        const supabase = createClient()
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (error) throw error
+        
+        if (session) {
+          const role = session.user?.user_metadata?.role
+          if (role === 'admin') {
+            router.push('/admin')
+          }
         }
+      } catch (err) {
+        console.error("Auth initialization failed:", err)
       }
     }
     checkSession()
@@ -90,8 +99,13 @@ function LoginForm() {
             Rider TV
           </h1>
           <p className="mt-4 text-center text-xl text-zinc-400 font-medium tracking-wide">
-            Administración Maestro <span className="text-[10px] opacity-30">v1.1</span>
+            Administración Maestro <span className="text-[10px] opacity-30">v1.2</span>
           </p>
+          {isMounted && (
+            <div className="mt-2 text-[10px] text-emerald-500 font-bold uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded">
+              ✅ Sistema Online
+            </div>
+          )}
         </div>
 
         <form className="mt-16 space-y-8" action={handleAction}>
@@ -164,15 +178,5 @@ function LoginForm() {
 }
 
 export default function RootHomePage() {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-[100dvh] bg-black">
-        <h1 className="text-center text-4xl font-extrabold uppercase text-white">
-            Rider TV
-        </h1>
-      </div>
-    }>
-      <LoginForm />
-    </Suspense>
-  )
+  return <LoginForm />
 }
