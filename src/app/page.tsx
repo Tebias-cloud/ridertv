@@ -177,6 +177,12 @@ function LoginForm() {
   )
 }
 
+export const dynamic = 'force-dynamic';
+
 export default function RootHomePage() {
-  return <LoginForm />
+  return (
+    <Suspense fallback={<div className="min-h-[100dvh] bg-black" />}>
+      <LoginForm />
+    </Suspense>
+  )
 }
