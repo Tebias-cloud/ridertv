@@ -1,17 +1,22 @@
 "use client"
 
 import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Eye, EyeOff } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 // WhatsApp funnel URL
 const WHATSAPP_URL = "https://wa.me/56961391859?text=Hola%20Rober,%20necesito%20ayuda%20con%20Rider%20TV"
 
-function LoginForm() {
-  const searchParams = useSearchParams()
-  const errorParam = searchParams.get('error')
-  
+// Inline SVGs for zero-dependency loading stability
+const EyeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+)
+
+const EyeOffIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.733 5.076a10.744 10.744 0 0 1 1.267-.076c7 0 10 7 10 7a9.956 9.956 0 0 1-1.551 2.232"/><path d="M14.652 14.652a3 3 0 0 1-4.304-4.304"/><path d="M15.534 20.03c-1.115.33-2.332.51-3.534.51-7 0-10-7-10-7a13.109 13.109 0 0 1 2.584-3.506"/><line x1="3" y1="3" x2="21" y2="21"/></svg>
+)
+
+function LoginFormContent() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -21,34 +26,39 @@ function LoginForm() {
   useEffect(() => {
     setIsMounted(true)
     
-    // 💨 Redirect Rápido: Chequeo de sesión inmediata
+    // 💨 Guarded Check Session
     const checkSession = async () => {
       try {
         const supabase = createClient()
+        if (!supabase) return
         const { data: { session }, error } = await supabase.auth.getSession()
-        if (error) throw error
+        if (error) return
         
         if (session) {
           const role = session.user?.user_metadata?.role
-          if (role === 'admin') {
-            router.push('/admin')
-          }
+          if (role === 'admin') router.push('/admin')
         }
       } catch (err) {
-        console.error("Auth initialization failed:", err)
+        console.error("Auth Fail:", err)
       }
     }
     checkSession()
 
-    if (errorParam === 'suspended') {
-      setErrorMsg('Tu cuenta ha expirado o ha sido suspendida. Contacta al soporte.')
+    // Legacy search params extraction for high-compatibility
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('error') === 'suspended') {
+        setErrorMsg('Tu cuenta ha expirado o ha sido suspendida.')
+      }
     }
-  }, [errorParam, router])
+  }, [router])
 
-  async function handleAction(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setIsLoading(true)
     setErrorMsg(null)
 
+    const formData = new FormData(e.currentTarget)
     const username = formData.get('username') as string
     const password = formData.get('password') as string
     
@@ -70,8 +80,6 @@ function LoginForm() {
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
           setErrorMsg('Acceso denegado. Usuario o clave incorrectos.')
-        } else if (error.message.includes('Email not confirmed')) {
-          setErrorMsg('La cuenta no ha sido activada.')
         } else {
           setErrorMsg(error.message)
         }
@@ -80,99 +88,115 @@ function LoginForm() {
         if (role === 'admin') {
           router.push('/admin')
         } else {
-          setErrorMsg('Acceso restringido. Este portal es solo para administradores.')
+          setErrorMsg('Acceso restringido. Solo administradores.')
           await supabase.auth.signOut()
         }
       }
     } catch (err: any) {
-      setErrorMsg('Error de conexión con Rider TV. Reintenta en unos segundos.')
+      setErrorMsg('Error de conexión con Rider TV.')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-[100dvh] bg-black px-4 sm:px-6 lg:px-8">
-      <div className="relative z-20 w-full max-w-2xl space-y-12">
+    <div 
+      className="relative flex flex-col items-center justify-center min-h-[100dvh] bg-black px-4 sm:px-6 lg:px-8 overflow-hidden font-sans select-none"
+      style={{
+        background: 'radial-gradient(circle at top left, rgba(239, 68, 68, 0.05), transparent 40%), radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.05), transparent 40%), #000000',
+        WebkitTapHighlightColor: 'transparent'
+      }}
+    >
+      <div className="relative z-50 w-full max-w-2xl space-y-12">
         <div className="flex flex-col items-center">
-          <h1 className="text-center text-5xl md:text-6xl tracking-[0.1em] font-extrabold uppercase text-white drop-shadow-lg">
+          <h1 
+            className="text-center text-6xl md:text-7xl tracking-[0.1em] font-black uppercase text-white drop-shadow-2xl"
+            style={{
+              background: 'linear-gradient(to right, #ef4444, #3b82f6)',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              color: 'transparent'
+            }}
+          >
             Rider TV
           </h1>
-          <p className="mt-4 text-center text-xl text-zinc-400 font-medium tracking-wide">
-            Administración Maestro <span className="text-[10px] opacity-30">v1.2</span>
+          <p className="mt-6 text-center text-2xl text-zinc-400 font-bold tracking-widest uppercase">
+            Acceso Maestro <span className="opacity-20 text-xs">v3.0</span>
           </p>
-          {isMounted && (
-            <div className="mt-2 text-[10px] text-emerald-500 font-bold uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded">
-              ✅ Sistema Online
-            </div>
-          )}
         </div>
 
-        <form className="mt-16 space-y-8" action={handleAction}>
+        <form className="mt-20 space-y-8" onSubmit={handleSubmit}>
           <div className="space-y-6">
             <div className="relative">
-              <label htmlFor="username" className="sr-only">Usuario</label>
               <input
                 id="username"
                 name="username"
                 type="text"
                 autoComplete="username"
                 required
-                className="block w-full px-5 py-5 border border-slate-800 bg-slate-900/80 backdrop-blur-sm placeholder-zinc-500 text-zinc-100 rounded-xl text-xl sm:text-2xl focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500 transition-colors duration-200 shadow-xl"
+                className="block w-full px-6 py-6 border border-white/10 bg-white/5 backdrop-blur-3xl placeholder-zinc-800 text-white rounded-2xl text-2xl focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500 transition-all duration-300 shadow-2xl"
+                style={{ WebkitBackdropFilter: 'blur(40px)' }}
                 placeholder="Nombre de Usuario"
               />
             </div>
             
-            <div className="relative rounded-xl">
-              <label htmlFor="password" className="sr-only">Contraseña</label>
+            <div className="relative">
               <input
                 id="password"
                 name="password"
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
-                className="block w-full px-5 py-5 pr-16 border border-slate-800 bg-slate-900/80 backdrop-blur-sm placeholder-zinc-500 text-zinc-100 rounded-xl text-xl sm:text-2xl focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500 shadow-xl transition-colors duration-200"
+                className="block w-full px-6 py-6 pr-20 border border-white/10 bg-white/5 backdrop-blur-3xl placeholder-zinc-800 text-white rounded-2xl text-2xl focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500 shadow-2xl transition-all duration-300"
+                style={{ WebkitBackdropFilter: 'blur(40px)' }}
                 placeholder="Contraseña"
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-3 my-auto h-12 w-12 flex items-center justify-center text-zinc-400 hover:text-white focus:text-white rounded-lg focus:outline-none focus:ring-4 focus:ring-red-500 focus:bg-slate-800 transition-all z-10"
-                aria-label={showPassword ? "Ocultar Contraseña" : "Mostrar Contraseña"}
+                onMouseDown={(e) => { e.preventDefault(); setShowPassword(!showPassword); }}
+                className="absolute inset-y-0 right-4 my-auto h-14 w-14 flex items-center justify-center text-zinc-500 hover:text-white transition-all z-10"
               >
-                {showPassword ? <EyeOff className="w-7 h-7 sm:w-8 sm:h-8" /> : <Eye className="w-7 h-7 sm:w-8 sm:h-8" />}
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             </div>
           </div>
 
           {errorMsg && (
-            <div className="bg-red-500/10 border-l-4 border-red-500 p-4 rounded text-center animate-in fade-in duration-200">
-              <p className="text-xl font-medium text-red-500">
+            <div className="bg-red-500/10 border border-red-500/50 p-6 rounded-2xl text-center backdrop-blur-xl">
+              <p className="text-xl font-bold text-red-500 tracking-tight">
                 {errorMsg}
               </p>
             </div>
           )}
 
-          <div className="pt-8 flex flex-col items-center">
+          <div className="pt-10 flex flex-col items-center">
             <button
               disabled={isLoading}
               type="submit"
-              className="group relative w-full flex justify-center py-5 px-4 border border-transparent text-xl sm:text-2xl font-bold rounded-xl text-white bg-red-600 hover:bg-blue-600 focus:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-colors duration-200 shadow-xl"
+              className="group relative w-full flex justify-center py-6 px-4 border-none text-2xl font-black rounded-2xl text-white bg-gradient-to-r from-red-600 to-blue-600 hover:brightness-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-2xl uppercase tracking-widest"
             >
-              {isLoading ? 'Conectando...' : 'Iniciar Sesión'}
+              {isLoading ? 'ESTABLECIENDO VÍNCULO...' : 'ENTRAR AL SISTEMA'}
             </button>
             
             <a 
               href={WHATSAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-8 text-sm text-zinc-400 hover:text-red-400 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:text-red-400 rounded py-2 px-4"
+              className="mt-12 text-zinc-500 hover:text-red-500 transition-colors uppercase font-bold tracking-widest text-xs"
             >
-              ¿Necesitas una cuenta o soporte? Contáctanos por WhatsApp
+              Soporte Directo Maestro
             </a>
           </div>
         </form>
       </div>
+      
+      {/* Ultra-subtle status tag for verification */}
+      {isMounted && (
+        <div className="absolute bottom-6 right-6 opacity-5 pointer-events-none">
+          <span className="text-[8px] text-white tracking-[0.5em] font-black uppercase">iOS_Hardened_Stable</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -181,8 +205,9 @@ export const dynamic = 'force-dynamic';
 
 export default function RootHomePage() {
   return (
-    <Suspense fallback={<div className="min-h-[100dvh] bg-black" />}>
-      <LoginForm />
+    <Suspense fallback={<div className="min-h-[100dvh] bg-black flex items-center justify-center text-zinc-900 font-black">RIDER TV</div>}>
+      <LoginFormContent />
     </Suspense>
   )
 }
+
