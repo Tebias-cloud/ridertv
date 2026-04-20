@@ -21,6 +21,7 @@ function LoginFormContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [diagInfo, setDiagInfo] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -43,14 +44,6 @@ function LoginFormContent() {
       }
     }
     checkSession()
-
-    // Legacy search params extraction for high-compatibility
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      if (params.get('error') === 'suspended') {
-        setErrorMsg('Tu cuenta ha sido suspendida.')
-      }
-    }
   }, [router])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -59,6 +52,12 @@ function LoginFormContent() {
 
     setIsLoading(true)
     setErrorMsg(null)
+    setDiagInfo(null)
+
+    // Diagnostic Timeout
+    const diagTimeout = setTimeout(() => {
+      setDiagInfo("Diagnóstico: El servidor tarda en responder. Verifica tu conexión o VPN.")
+    }, 5000)
 
     try {
       const formData = new FormData(e.currentTarget)
@@ -67,6 +66,7 @@ function LoginFormContent() {
       
       if (!username || !password) {
         setErrorMsg('Ingresa usuario y clave')
+        clearTimeout(diagTimeout)
         setIsLoading(false)
         return
       }
@@ -74,28 +74,36 @@ function LoginFormContent() {
       const fakeEmail = `${username.toLowerCase()}@rider.com`
       const supabase = createClient()
 
+      console.log("Attempting login for:", fakeEmail)
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: fakeEmail,
         password,
       })
 
+      clearTimeout(diagTimeout)
+
       if (error) {
+        console.error("Supabase Error:", error)
         if (error.message.includes('Invalid login credentials')) {
           setErrorMsg('Usuario o clave incorrectos')
         } else {
-          setErrorMsg(error.message)
+          setErrorMsg(`Error del Sistema: ${error.message}`)
+          setDiagInfo(`Detalles técnicos: ${JSON.stringify(error)}`)
         }
       } else {
         const role = data.user?.user_metadata?.role
         if (role === 'admin') {
           router.push('/admin')
         } else {
-          setErrorMsg('Solo administradores')
+          setErrorMsg('Acceso Denegado: Solo Administradores')
           await supabase.auth.signOut()
         }
       }
     } catch (err: any) {
-      setErrorMsg('Error de conexión. Intenta de nuevo.')
+      clearTimeout(diagTimeout)
+      setErrorMsg('Fallo de Red. Verifica si tu iPhone bloquea el acceso.')
+      setDiagInfo(`Error fatal: ${err.message || 'Desconocido'}`)
     } finally {
       setIsLoading(false)
     }
@@ -103,20 +111,26 @@ function LoginFormContent() {
 
   return (
     <div 
-      className="relative flex flex-col items-center justify-center min-h-[100dvh] bg-zinc-950 px-6 overflow-hidden font-sans"
-      style={{ WebkitTapHighlightColor: 'transparent' }}
+      className="relative flex flex-col items-center justify-center min-h-[100dvh] px-6 overflow-hidden font-sans"
+      style={{ 
+        background: 'radial-gradient(circle at top, #001a33, #000000)',
+        WebkitTapHighlightColor: 'transparent'
+      }}
     >
-      <div className="relative z-50 w-full max-w-md space-y-10">
+      {/* Background Glows (Safari Safe) */}
+      <div className="absolute top-0 w-full h-full pointer-events-none opacity-20">
+        <div className="absolute top-[-10%] left-[-10%] w-[150%] h-[50%] bg-blue-600/30 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[100%] h-[50%] bg-red-600/20 blur-[120px] rounded-full" />
+      </div>
+
+      <div className="relative z-50 w-full max-w-md space-y-12">
         <div className="text-center">
-          <h1 className="text-5xl font-black tracking-tighter text-white uppercase italic">
+          <h1 className="text-6xl md:text-7xl font-black tracking-tighter text-white uppercase italic drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
             Rider <span className="text-red-600">TV</span>
           </h1>
-          <p className="mt-3 text-zinc-500 font-medium tracking-widest text-xs uppercase">
-            Administración Premium
-          </p>
         </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div className="relative">
               <input
@@ -125,7 +139,7 @@ function LoginFormContent() {
                 type="text"
                 autoComplete="username"
                 required
-                className="block w-full px-5 py-4 bg-zinc-900 border border-white/5 text-white rounded-2xl text-lg focus:outline-none focus:border-red-600 transition-all shadow-inner"
+                className="block w-full px-6 py-5 bg-zinc-900/80 border border-white/5 text-white rounded-3xl text-xl focus:outline-none focus:border-blue-500 transition-all shadow-2xl backdrop-blur-md"
                 placeholder="Usuario"
               />
             </div>
@@ -137,14 +151,13 @@ function LoginFormContent() {
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
-                className="block w-full px-5 py-4 pr-14 bg-zinc-900 border border-white/5 text-white rounded-2xl text-lg focus:outline-none focus:border-red-600 transition-all shadow-inner"
+                className="block w-full px-6 py-5 pr-14 bg-zinc-900/80 border border-white/5 text-white rounded-3xl text-xl focus:outline-none focus:border-blue-500 transition-all shadow-2xl backdrop-blur-md"
                 placeholder="Contraseña"
               />
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); setShowPassword(!showPassword); }}
-                className="absolute inset-y-0 right-3 flex items-center justify-center px-2 text-zinc-600 hover:text-white transition-colors"
-                aria-label="Toggle Password"
+                className="absolute inset-y-0 right-4 flex items-center justify-center px-2 text-zinc-600 hover:text-white transition-colors"
               >
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
@@ -152,47 +165,43 @@ function LoginFormContent() {
           </div>
 
           {errorMsg && (
-            <div className="py-2 px-1 text-center">
-              <p className="text-sm font-bold text-red-500 italic">
+            <div className="bg-red-600/10 border border-red-600/20 py-4 px-4 rounded-2xl text-center backdrop-blur-md animate-pulse">
+              <p className="text-sm font-bold text-red-500 uppercase tracking-tight">
                 {errorMsg}
               </p>
             </div>
           )}
 
-          <div className="pt-4 space-y-6">
+          {diagInfo && (
+            <div className="bg-blue-600/10 border border-blue-600/20 py-3 px-4 rounded-xl text-center">
+              <p className="text-[10px] font-mono text-blue-400 leading-tight">
+                {diagInfo}
+              </p>
+            </div>
+          )}
+
+          <div className="pt-4">
             <button
               disabled={isLoading}
               type="submit"
-              className="w-full flex justify-center py-4 px-4 bg-white text-black text-lg font-black rounded-2xl hover:bg-zinc-200 active:scale-95 disabled:opacity-50 transition-all shadow-lg uppercase tracking-tighter"
+              className="w-full h-16 flex items-center justify-center bg-red-600 text-white text-xl font-black rounded-3xl hover:bg-red-700 active:scale-[0.98] disabled:opacity-50 transition-all shadow-[0_0_30px_rgba(220,38,38,0.3)] uppercase tracking-tighter"
             >
-              {isLoading ? 'Cargando...' : 'Entrar al Panel'}
+              {isLoading ? 'Conectando...' : 'Entrar al Sistema'}
             </button>
             
-            <div className="flex flex-col items-center gap-4">
+            <div className="mt-10 text-center">
               <a 
                 href={WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-zinc-600 hover:text-zinc-400 font-bold uppercase tracking-widest transition-colors"
+                className="text-[10px] text-zinc-500 hover:text-white font-bold uppercase tracking-[0.3em] transition-colors"
               >
-                Soporte Técnico
+                Soporte Oficial Rider
               </a>
             </div>
           </div>
         </form>
       </div>
-      
-      {/* Background decoration - very subtle for mobile gpu */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-30 pointer-events-none z-0">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-red-600/10 rounded-full blur-[120px]" />
-          <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-blue-600/10 rounded-full blur-[120px]" />
-      </div>
-
-      {isMounted && (
-        <div className="absolute bottom-10 left-0 right-0 text-center opacity-10 pointer-events-none">
-          <span className="text-[10px] text-white font-mono uppercase tracking-[0.4em]">Auth System Active</span>
-        </div>
-      )}
     </div>
   )
 }
@@ -201,10 +210,11 @@ export const dynamic = 'force-dynamic';
 
 export default function RootHomePage() {
   return (
-    <Suspense fallback={<div className="min-h-[100dvh] bg-zinc-950" />}>
+    <Suspense fallback={<div className="min-h-[100dvh] bg-black" />}>
       <LoginFormContent />
     </Suspense>
   )
 }
+
 
 
