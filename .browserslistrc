@@ -1,0 +1,5 @@
+# Target iPhone 11 (iOS 13+) specifically
+ios_saf >= 13
+last 2 versions
+> 0.5%
+not dead
