@@ -21,77 +21,76 @@ function LoginFormContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [useEmergencyMode, setUseEmergencyMode] = useState(false)
   
   // Nuclear Diagnostics
   const [logs, setLogs] = useState<string[]>([])
-  const [netStatus, setNetStatus] = useState<string>("Checking...")
+  const [netStatus, setNetStatus] = useState<string>("...")
   
-  const addLog = (msg: string) => setLogs(prev => [...prev.slice(-4), `> ${msg}`])
+  const addLog = (msg: string) => setLogs(prev => [...prev.slice(-3), `> ${msg}`])
 
   useEffect(() => {
     setIsMounted(true)
-    addLog("System Init")
+    addLog("App Engine Started")
     
     // Catch Global Errors
-    const handleError = (e: ErrorEvent | PromiseRejectionEvent) => {
-      const msg = 'reason' in e ? e.reason : e.message
-      addLog(`FATAL: ${String(msg)}`)
-    }
+    const handleError = (e: any) => addLog(`FATAL: ${e.message || 'Error JS'}`)
     window.addEventListener('error', handleError)
-    window.addEventListener('unhandledrejection', handleError)
 
-    // Check Keys
+    // Check Config and Net
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    addLog(`Config: ${url ? 'URL-OK' : 'URL-MISSING'} | ${key ? 'KEY-OK' : 'KEY-MISSING'}`)
-
-    // Probe Network
     if (url) {
       fetch(url, { mode: 'no-cors' })
-        .then(() => { setNetStatus("REACHABLE"); addLog("Network: Supabase Reachable"); })
-        .catch((e) => { setNetStatus("BLOCKED"); addLog(`Network: BLOCKED (${e.message})`); })
+        .then(() => setNetStatus("OK"))
+        .catch(() => setNetStatus("BLOCKED"))
     }
 
-    return () => {
-      window.removeEventListener('error', handleError)
-      window.removeEventListener('unhandledrejection', handleError)
+    // Check for query errors (from Zero-JS redirect)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const error = params.get('error')
+      if (error) setErrorMsg(decodeURIComponent(error))
     }
+
+    return () => window.removeEventListener('error', handleError)
   }, [])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    // Si estamos en modo emergencia, dejamos que el navegador haga el POST estándar
+    if (useEmergencyMode) return 
+
     e.preventDefault()
     if (isLoading) return
 
     setIsLoading(true)
     setErrorMsg(null)
-    addLog("Submit Triggered")
+    addLog("Submit Intercepted")
 
     const formData = new FormData(e.currentTarget)
     const username = (formData.get('username') as string)?.trim() || ""
     const password = (formData.get('password') as string)?.trim() || ""
     
     if (!username || !password) {
-      setErrorMsg('Usuario y Clave requeridos')
+      setErrorMsg('Ingresa usuario y clave')
       setIsLoading(false)
       return
     }
 
     try {
-      addLog("Initializing Client...")
       const supabase = createClient()
       const fakeEmail = `${username.toLowerCase()}@rider.com`
       
-      addLog("Auth: Requesting...")
+      addLog("Authenticating...")
       const { data, error } = await supabase.auth.signInWithPassword({
         email: fakeEmail,
         password,
       })
 
       if (error) {
-        addLog(`Auth Result: ERROR (${error.status})`)
-        setErrorMsg(error.message.includes('Invalid login credentials') ? 'Usuario o clave incorrectos' : error.message)
+        addLog("Login Fail")
+        setErrorMsg(error.message.includes('Invalid') ? 'Usuario o clave incorrectos' : error.message)
       } else {
-        addLog("Auth Result: SUCCESS")
+        addLog("Login Success")
         const role = data.user?.user_metadata?.role
         if (role === 'admin') router.push('/admin')
         else {
@@ -100,8 +99,8 @@ function LoginFormContent() {
         }
       }
     } catch (err: any) {
-      addLog(`CATCH: ${err.message}`)
-      setErrorMsg('Error de conexión con el sistema')
+      addLog(`Crash: ${err.message}`)
+      setErrorMsg('Error de sistema. Usa Modo Emergencia.')
     } finally {
       setIsLoading(false)
     }
@@ -110,40 +109,48 @@ function LoginFormContent() {
   return (
     <div className="relative flex flex-col items-center justify-center min-h-[100dvh] bg-[#0c0c1e] px-8 overflow-hidden font-sans">
       
-      {/* NUCLEAR DIAGNOSTIC OVERLAY */}
-      <div className="fixed top-2 left-2 right-2 z-[9999] bg-black/80 backdrop-blur-md rounded-xl p-3 border border-zinc-800 text-[10px] font-mono select-text pointer-events-auto">
-        <div className="flex justify-between items-center mb-1 border-b border-zinc-800 pb-1">
-          <span className="text-zinc-500 uppercase tracking-widest font-bold">iPhone Diagnostic Console</span>
-          <span className={`px-2 py-0.5 rounded ${netStatus === 'REACHABLE' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-            NET: {netStatus}
-          </span>
+      {/* DIAGNOSTIC PANEL (Only if JS works) */}
+      <div className="fixed top-2 left-2 right-2 z-50 bg-black/40 backdrop-blur-md rounded-xl p-3 border border-white/5 text-[9px] font-mono text-zinc-500">
+        <div className="flex justify-between items-center opacity-50">
+          <span>iPhone Health Monitor</span>
+          <span>NET: {netStatus}</span>
         </div>
-        <div className="space-y-0.5">
-          {logs.map((log, i) => (
-            <div key={i} className={log.includes('FATAL') ? 'text-red-500 font-bold' : 'text-blue-400'}>{log}</div>
-          ))}
-          {logs.length === 0 && <div className="text-zinc-600 italic">No logs yet...</div>}
+        <div className="mt-1">
+          {logs.map((log, i) => <div key={i}>{log}</div>)}
+          {logs.length === 0 && <div className="text-red-500 font-bold animate-pulse">! JAVASCRIPT BLOQUEADO POR IPHONE !</div>}
         </div>
       </div>
 
-      <div className="relative z-50 w-full max-w-sm space-y-12 mt-20">
+      <div className="relative z-20 w-full max-w-sm space-y-12">
         <div className="text-center">
-          <h1 className="text-5xl font-extrabold tracking-tight uppercase flex items-center justify-center gap-1.5">
+          <h1 className="text-5xl font-extrabold tracking-tight uppercase flex items-center justify-center gap-1.5 py-2">
             <span className="text-[#f13a3a]">R</span>
             <span className="text-[#e2e2e2]">IDER</span>
             <span className="text-[#e2e2e2] ml-1">T</span>
             <span className="text-[#3b82f6]">V</span>
           </h1>
-          <p className="mt-4 text-[#a0a0b8] font-medium text-[15px]">
-            Streaming sin límites (Solo Usuario y Clave)
+          <p className="mt-4 text-[#a0a0b8] font-medium text-[15px] tracking-tight">
+            {useEmergencyMode ? 'MODO DE EMERGENCIA ACTIVO' : 'Streaming sin límites (Solo Usuario y Clave)'}
           </p>
         </div>
 
-        <form className="space-y-6" onSubmit={handleSubmit}>
+        {/* MODAL / TOGGLE FOR EMERGENCY */}
+        {!useEmergencyMode && logs.length === 0 && isMounted && (
+           <div className="bg-red-600/20 border border-red-600/40 p-4 rounded-xl text-center animate-bounce cursor-pointer" onClick={() => setUseEmergencyMode(true)}>
+             <p className="text-xs font-black text-red-500 uppercase">Activar Modo de Emergencia (Sin JS)</p>
+           </div>
+        )}
+
+        <form 
+          className="space-y-6" 
+          onSubmit={handleSubmit}
+          action={useEmergencyMode ? "/api/auth/login" : undefined}
+          method={useEmergencyMode ? "POST" : undefined}
+        >
           <div className="space-y-4">
             <input
               id="username" name="username" type="text" required
-              className="block w-full px-5 py-5 bg-[#1a1a3a]/60 border border-white/5 text-white rounded-xl text-lg placeholder-[#5c5c7a] outline-none"
+              className="block w-full px-5 py-5 bg-[#1a1a3a]/40 border border-white/5 text-white rounded-xl text-lg placeholder-[#5c5c7a] outline-none"
               placeholder="Nombre de Usuario"
             />
             
@@ -152,12 +159,12 @@ function LoginFormContent() {
                 id="password" name="password" 
                 type={showPassword ? "text" : "password"}
                 required
-                className="block w-full px-5 py-5 pr-16 bg-[#1a1a3a]/60 border border-white/5 text-white rounded-xl text-lg placeholder-[#5c5c7a] outline-none"
+                className="block w-full px-5 py-5 pr-16 bg-[#1a1a3a]/40 border border-white/5 text-white rounded-xl text-lg placeholder-[#5c5c7a] outline-none"
                 placeholder="Contraseña"
               />
               <div
-                onClick={() => { console.log('Toggle Click'); setShowPassword(!showPassword); }}
-                className="absolute inset-y-0 right-0 w-16 h-full flex items-center justify-center text-[#5c5c7a] z-[100] active:text-white"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 w-16 h-full flex items-center justify-center text-[#5c5c7a] cursor-pointer"
               >
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </div>
@@ -165,30 +172,54 @@ function LoginFormContent() {
           </div>
 
           {errorMsg && (
-            <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-xl text-center">
-              <p className="text-xs font-bold text-red-500 italic uppercase">
+            <div className="bg-red-600/5 border border-red-600/20 py-3 px-4 rounded-xl text-center">
+              <p className="text-sm font-bold text-red-500 italic">
                 {errorMsg}
               </p>
             </div>
           )}
 
-          <button
-            disabled={isLoading}
-            type="submit"
-            className="w-full h-16 bg-[#f13a3a] text-white text-[19px] font-bold rounded-2xl hover:brightness-110 active:scale-[0.98] disabled:opacity-50 transition-all uppercase"
-          >
-             {isLoading ? 'Conectando...' : 'Iniciar Sesión'}
-          </button>
-        </form>
+          <div className="pt-4">
+            <button
+              disabled={isLoading && !useEmergencyMode}
+              type="submit"
+              className="w-full h-16 flex items-center justify-center bg-[#f13a3a] text-white text-[19px] font-bold rounded-2xl hover:bg-red-700 active:scale-[0.98] transition-all uppercase"
+            >
+               {isLoading ? 'Conectando...' : 'Iniciar Sesión'}
+            </button>
+            
+            <div className="mt-14 text-center space-y-4">
+              <button 
+                type="button"
+                onClick={() => setUseEmergencyMode(!useEmergencyMode)}
+                className="text-[11px] text-zinc-600 hover:text-zinc-400 font-bold uppercase tracking-widest"
+              >
+                {useEmergencyMode ? 'Volver al Modo Normal' : '¿Problemas? Usar Modo Emergencia'}
+              </button>
 
-        <div className="text-center pt-8">
-          <a href={WHATSAPP_URL} target="_blank" className="text-[13px] text-[#a0a0b8] font-medium block">
-            ¿Necesitas ayuda? Contáctanos por WhatsApp
-          </a>
-        </div>
+              <a href={WHATSAPP_URL} target="_blank" className="text-[13px] text-[#a0a0b8] font-medium block">
+                Soporte por WhatsApp
+              </a>
+            </div>
+          </div>
+        </form>
       </div>
 
       <div className="absolute top-0 w-full h-[50%] bg-blue-600/5 blur-[100px] pointer-events-none" />
+      
+      {/* DIAGNOSTIC FOR ZERO-JS: If JS is off, this shows */}
+      <noscript>
+        <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center px-8 text-center">
+          <h2 className="text-red-600 text-2xl font-black mb-4">JS BLOQUEADO</h2>
+          <p className="text-zinc-400 text-sm mb-8">Tu iPhone está bloqueando el motor de la web. Usa el botón de abajo para entrar sin JavaScript.</p>
+          <form action="/api/auth/login" method="POST" className="w-full space-y-4">
+            <input name="username" placeholder="Usuario" className="w-full p-4 bg-zinc-900 rounded-xl text-white outline-none" required />
+            <input name="password" type="password" placeholder="Clave" className="w-full p-4 bg-zinc-900 rounded-xl text-white outline-none" required />
+            <button type="submit" className="w-full p-4 bg-red-600 text-white font-black rounded-xl">INICIAR SESIÓN (MODO SEGURO)</button>
+          </form>
+        </div>
+      </noscript>
+
     </div>
   )
 }
@@ -202,6 +233,7 @@ export default function RootHomePage() {
     </Suspense>
   )
 }
+
 
 
 
