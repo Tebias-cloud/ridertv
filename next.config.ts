@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Hardening for iPhone/Safari Compatibility
+  transpilePackages: ['lucide-react', '@supabase/ssr'],
   experimental: {
     optimizeCss: false,
   },
